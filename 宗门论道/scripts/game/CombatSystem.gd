@@ -1,9 +1,16 @@
 ## ============================================================
 ## CombatSystem.gd - 战斗系统
 ## ============================================================
-## 作用: 处理攻击逻辑（近战/远程）、击杀处理、大殿受伤。
+## 作用: 处理攻击逻辑（近战/远程）、范围伤害、击杀处理、大殿受伤。
 ## 设计: 纯静态方法，由 BattleLogic 每帧调用。
-## 依赖: Unit, Const
+## 依赖: Unit, Formation, Player, Const
+## 对应:
+##   C4.02 近战互扣 - melee_attack
+##   C4.03 远程单方 - ranged_attack
+##   C4.04 范围伤害 - area_damage
+##   C4.05 击杀推进 - handle_kill
+##   C4.01 攻击主逻辑 - attack
+##   C4.06 大殿受伤 - damage_hall
 ## ============================================================
 
 class_name CombatSystem
@@ -26,14 +33,41 @@ static func melee_attack(attacker: Unit, target: Unit) -> void:
 ## ============================================================
 
 ## 远程攻击：只有目标掉血，攻击者无损
-static func ranged_attack(attacker: Unit, target: Variant) -> void:
+## [param attacker] 攻击单位
+## [param target] 目标（Unit或Formation）
+## [param model] 战斗模型（用于阵法反伤等副作用）
+static func ranged_attack(attacker: Unit, target: Variant, model: Dictionary = {}) -> void:
 	var atk_val: int = attacker.get_effective_atk()
 	if target is Unit:
 		target.take_damage(atk_val, attacker)
+	elif target is Formation:
+		# 阵法受到伤害（含反伤特性）
+		target.take_damage(atk_val, attacker, model)
 	elif target is Dictionary:
-		# 阵法受到伤害
+		# 兼容旧版字典阵法
 		var current_hp: int = int(target.get("hp", 0))
 		target["hp"] = max(0, current_hp - atk_val)
+
+
+## ============================================================
+## C4.04 - 范围伤害
+## ============================================================
+
+## 范围伤害：对一组目标造成相同伤害
+## [param targets] 目标数组（可混合Unit/Formation/Dictionary）
+## [param amount] 单次伤害值
+## [param source] 伤害来源（用于击杀判定/反伤）
+## [param model] 战斗模型
+static func area_damage(targets: Array, amount: int, source: Variant, model: Dictionary = {}) -> void:
+	for t in targets:
+		if t is Unit:
+			t.take_damage(amount, source)
+		elif t is Formation:
+			t.take_damage(amount, source, model)
+		elif t is Dictionary:
+			# 兼容旧版字典阵法
+			var current_hp: int = int(t.get("hp", 0))
+			t["hp"] = max(0, current_hp - amount)
 
 
 ## ============================================================
@@ -67,6 +101,8 @@ static func attack(unit: Unit, delta: float, model: Dictionary) -> void:
 	var target_dead: bool = false
 	if target is Unit:
 		target_dead = target.is_dead()
+	elif target is Formation:
+		target_dead = target.is_dead()
 	elif target is Dictionary:
 		target_dead = int(target.get("hp", 0)) <= 0
 
@@ -86,10 +122,13 @@ static func attack(unit: Unit, delta: float, model: Dictionary) -> void:
 				melee_attack(unit, target)
 		else:
 			# 远程：单方攻击
-			ranged_attack(unit, target)
+			ranged_attack(unit, target, model)
 
 		# 攻击后检查目标是否死亡
 		if target is Unit:
+			if target.is_dead():
+				handle_kill(unit, target)
+		elif target is Formation:
 			if target.is_dead():
 				handle_kill(unit, target)
 		elif target is Dictionary:
@@ -103,23 +142,45 @@ static func attack(unit: Unit, delta: float, model: Dictionary) -> void:
 
 ## 大殿受伤逻辑
 ## 护盾优先吸收，hp到0触发游戏结束
-static func damage_hall(player: Dictionary, amount: int, model: Dictionary) -> void:
-	# 护盾优先
-	var shield: int = int(player.get("hall_shield", 0))
+## [param player] 玩家（Player实例）
+## [param amount] 伤害值
+## [param model] 战斗模型
+static func damage_hall(player: Variant, amount: int, model: Dictionary) -> void:
+	# 统一读取护盾与血量（兼容Player实例）
+	var shield: int = 0
+	var current_hp: int = 0
+	var player_id: int = 0
+
+	if player is Player:
+		shield = player.hall_shield
+		current_hp = player.hall_hp
+		player_id = player.id
+	elif player is Dictionary:
+		shield = int(player.get("hall_shield", 0))
+		current_hp = int(player.get("hall_hp", Const.HALL_HP))
+		player_id = int(player.get("id", 0))
+
+	# 护盾优先吸收
 	if shield > 0:
 		var absorbed: int = min(shield, amount)
 		amount -= absorbed
-		player["hall_shield"] = shield - absorbed
+		shield -= absorbed
+		if player is Player:
+			player.hall_shield = shield
+		elif player is Dictionary:
+			player["hall_shield"] = shield
 		if amount <= 0:
 			return
 
 	# 扣减血量
-	var current_hp: int = int(player.get("hall_hp", Const.HALL_HP))
-	current_hp -= amount
-	player["hall_hp"] = max(0, current_hp)
+	current_hp = max(0, current_hp - amount)
+	if player is Player:
+		player.hall_hp = current_hp
+	elif player is Dictionary:
+		player["hall_hp"] = current_hp
 
 	# 大殿血量归零，游戏结束
 	if current_hp <= 0:
 		model["state"] = "ended"
-		model["winner"] = 1 - int(player.get("id", 0))
+		model["winner"] = 1 - player_id
 		print("[CombatSystem] 大殿被摧毁！玩家%d获胜" % model["winner"])

@@ -24,10 +24,14 @@ static func find_target(unit: Unit, model: Dictionary) -> Variant:
 		if u is Unit and not u.is_dead() and u.owner != unit.owner:
 			enemies.append(u)
 
-	# 收集敌方阵法
+	# 收集敌方阵法（支持Formation对象和旧版字典）
 	for f in model.get("formations", []):
-		if f != null and f.get("owner", -1) != unit.owner and f.get("hp", 0) > 0:
-			formations.append(f)
+		if f is Formation:
+			if not f.is_dead() and f.owner != unit.owner:
+				formations.append(f)
+		elif f is Dictionary:
+			if f.get("owner", -1) != unit.owner and f.get("hp", 0) > 0:
+				formations.append(f)
 
 	# 合并候选目标
 	var candidates: Array = enemies + formations
@@ -37,6 +41,8 @@ static func find_target(unit: Unit, model: Dictionary) -> Variant:
 	for c in candidates:
 		var c_x: int = -1
 		if c is Unit:
+			c_x = c.grid_x
+		elif c is Formation:
 			c_x = c.grid_x
 		elif c is Dictionary:
 			c_x = int(c.get("grid_x", -1))
@@ -62,6 +68,8 @@ static func _get_distance(unit: Unit, target: Variant) -> float:
 	var target_y: float = 0.0
 	if target is Unit:
 		target_y = target.position_y
+	elif target is Formation:
+		target_y = target.position_y
 	elif target is Dictionary:
 		target_y = float(target.get("position_y", 0.0))
 	return absf(target_y - unit.position_y)
@@ -80,6 +88,8 @@ static func check_collision(unit: Unit, target: Variant) -> bool:
 	# 跨列不命中
 	var target_x: int = -1
 	if target is Unit:
+		target_x = target.grid_x
+	elif target is Formation:
 		target_x = target.grid_x
 	elif target is Dictionary:
 		target_x = int(target.get("grid_x", -1))

@@ -30,11 +30,14 @@ var state: String = "walking"  ## walking/fighting/dead
 var target: Variant = null     ## 当前目标（Unit/Formation/null）
 var last_attack_time: int = 0  ## 上次攻击时间（毫秒）
 
+# ===== 长老技能计时（仅精英单位unit_type=="elite"使用）=====
+var elder_timer: float = 0.0   ## 长老技能累计计时（秒）
+
 # ===== Buff系统 =====
 var buffs: Array[Dictionary] = []  ## {type, value, duration}
 
-# ===== 阵营朝向：攻方向上(y递减)，守方向下(y递增) =====
-var facing: int = 1  ## 1=向下(守方), -1=向上(攻方)
+# ===== 阵营朝向：攻方在顶部(y=0)向下进攻(y递增)，守方在底部(y=BOARD_LENGTH-1)向上(y递减) =====
+var facing: int = 1  ## 1=向下(攻方), -1=向上(守方)
 
 
 ## ============================================================
@@ -61,17 +64,18 @@ func init_from_card(p_card_id: String, p_owner: int, x: int, y: int) -> void:
 	attack_range = int(card.get("range", 0))
 	unit_type = card.get("type", "unit")
 
-	# 攻方面朝上（y递减），守方面朝下（y递增）
-	facing = -1 if owner == 0 else 1
+	# 攻方在顶部(y=0)向下进攻(y递增)，守方在底部(y=BOARD_LENGTH-1)向上(y递减)
+	facing = 1 if owner == 0 else -1
 
 	# 初始位置
 	if owner == 0:
-		position_y = 0.0  ## 攻方从底部出发
+		position_y = 0.0  ## 攻方从顶部出发
 	else:
-		position_y = float(Const.BOARD_LENGTH - 1)  ## 守方从顶部出发
+		position_y = float(Const.BOARD_LENGTH - 1)  ## 守方从底部出发
 
 	state = "walking"
 	target = null
+	elder_timer = 0.0  ## 长老技能计时器重置
 
 
 ## ============================================================
