@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""《宗门论道》Godot版 — Excel生成脚本
+"""《宗门论道》Godot版 — Excel生成脚本 v2（优化美观版）
 10个Sheet：1.阶段规划 2.开发主表 3.进度统计 4.卡牌数据 5.数值配置
 6.AI提问指南 7.资源清单 8.决策日志 9.跨平台导出 10.设计思路"""
 import json
@@ -14,74 +14,135 @@ with open('/workspace/_data_godot.json') as f:
 L3_ROWS = [d for d in D if d[0] == 'L3']
 print(f'加载 {len(L3_ROWS)} 个L3任务')
 
-# ===== 样式 =====
-ST_TITLE = {'font': Font(name='微软雅黑', size=16, bold=True, color='FFFFFF'),
-            'fill': PatternFill('solid', fgColor='2F5496'), 'align': Alignment('center', 'center')}
-ST_HEAD = {'font': Font(name='微软雅黑', size=10, bold=True, color='FFFFFF'),
-           'fill': PatternFill('solid', fgColor='4472C4'), 'align': Alignment('center', 'center', wrap_text=True)}
-ST_L1 = {'font': Font(name='微软雅黑', size=13, bold=True, color='FFFFFF'),
-         'fill': PatternFill('solid', fgColor='1F4E79'), 'align': Alignment('left', 'center')}
-ST_L2 = {'font': Font(name='微软雅黑', size=11, bold=True, color='1F4E79'),
-         'fill': PatternFill('solid', fgColor='D6E4F0'), 'align': Alignment('left', 'center')}
-ST_L3 = {'font': Font(name='微软雅黑', size=10), 'align': Alignment('left', 'center', wrap_text=True),
-         'fill': PatternFill('solid', fgColor='FFFFFF')}
-ST_L3_ALT = {'font': Font(name='微软雅黑', size=10), 'align': Alignment('left', 'center', wrap_text=True),
-             'fill': PatternFill('solid', fgColor='F5F7FA')}
-ST_CODE = {'font': Font(name='Consolas', size=9), 'fill': PatternFill('solid', fgColor='FFF9E6')}
-ST_CRIT = {'font': Font(name='微软雅黑', size=9, color='7F6000'), 'fill': PatternFill('solid', fgColor='FFF9E6')}
-ST_DONE = 'C6EFCE'; ST_TODO = 'FCE4D6'; ST_DOING = 'FFF2CC'
-ST_PHASE = {'font': Font(name='微软雅黑', size=11, bold=True), 'align': Alignment('left', 'center', wrap_text=True)}
-thin = Side(style='thin', color='B0B0B0')
-BORDER = Border(left=thin, right=thin, top=thin, bottom=thin)
+# ===== 配色方案（统一蓝色系） =====
+C_TITLE_BG = '1F3864'      # 标题深蓝
+C_HEAD_BG = '2E5C8A'       # 表头中蓝
+C_L1_BG = '1F4E79'         # L1深蓝
+C_L2_BG = 'BDD7EE'         # L2浅蓝
+C_L3_BG = 'FFFFFF'         # L3白
+C_L3_ALT_BG = 'F2F7FC'     # L3浅灰蓝交替
+C_CODE_BG = 'FFF8E1'       # 代码浅黄
+C_CRIT_BG = 'FFF3E0'       # 完成标准浅橙
+C_PHASE_BG = 'E8EEF4'      # 阶段行浅灰蓝
+C_DONE = 'C6EFCE'
+C_TODO = 'FCE4D6'
+C_DOING = 'FFF2CC'
+C_WHITE = 'FFFFFF'
+C_DARK = '1F3864'
+C_TEXT = '333333'
 
-def apply_style(cell, st):
-    for k, v in st.items():
-        if k == 'align':
-            cell.alignment = v
-        else:
-            setattr(cell, k, v)
-    cell.border = BORDER
+FONT = '微软雅黑'
+MONO = 'Consolas'
+
+# ===== 样式工厂 =====
+def mk_font(size=10, bold=False, color=C_TEXT, name=FONT):
+    return Font(name=name, size=size, bold=bold, color=color)
+
+def mk_fill(color):
+    return PatternFill('solid', fgColor=color)
+
+def mk_align(h='left', v='center', wrap=True):
+    return Alignment(horizontal=h, vertical=v, wrap_text=wrap)
+
+thin = Side(style='thin', color='C0C0C0')
+medium = Side(style='medium', color=C_HEAD_BG)
+BORDER = Border(left=thin, right=thin, top=thin, bottom=thin)
+BORDER_TOP_THICK = Border(left=thin, right=thin, top=medium, bottom=thin)
+
+def style_cell(cell, font=None, fill=None, align=None, border=BORDER):
+    if font: cell.font = font
+    if fill: cell.fill = fill
+    if align: cell.alignment = align
+    if border: cell.border = border
+
+# ===== 行高计算 =====
+def calc_row_height(texts, col_widths):
+    """根据文本内容和列宽计算所需行高"""
+    max_lines = 1
+    for text, width in zip(texts, col_widths):
+        if not text: continue
+        text = str(text)
+        # 每行能容纳的字符数（中文算2，英文算1，粗略按width*1.5）
+        chars_per_line = max(1, int(width * 1.5))
+        # 计算需要的行数（考虑显式换行）
+        lines = text.split('\n')
+        total = 0
+        for line in lines:
+            total += max(1, (len(line) + chars_per_line - 1) // chars_per_line)
+        max_lines = max(max_lines, total)
+    return max(22, min(120, max_lines * 16 + 6))
 
 wb = Workbook()
 
-# ===== Sheet 1: 阶段规划 =====
+# ============================================================
+# Sheet 1: 阶段规划
+# ============================================================
 ws1 = wb.active; ws1.title = '1.阶段规划'
 ws1.merge_cells('A1:H1')
-apply_style(ws1['A1'], ST_TITLE); ws1['A1'] = '《宗门论道》开发阶段规划（Godot引擎版）'
-headers = ['阶段', '名称', '目标', '包含模块', '核心产出', '前置条件', '预估工时h', '里程碑']
+style_cell(ws1['A1'], mk_font(16, True, C_WHITE), mk_fill(C_TITLE_BG), mk_align('center', 'center'))
+ws1['A1'] = '《宗门论道》开发阶段规划（Godot引擎版）'
+ws1.row_dimensions[1].height = 38
+
+headers = ['阶段', '名称', '目标', '包含模块', '核心产出', '前置条件', '工时h', '里程碑']
 for i, h in enumerate(headers, 1):
-    apply_style(ws1.cell(row=2, column=i, value=h), ST_HEAD)
+    style_cell(ws1.cell(row=2, column=i, value=h),
+               mk_font(11, True, C_WHITE), mk_fill(C_HEAD_BG), mk_align('center', 'center'))
+ws1.row_dimensions[2].height = 28
+
 phases = [
-    ('P1', '项目骨架', '搭建Godot项目骨架和autoload单例', 'A1主场景 A2输入 A3事件总线 A4场景管理 A5渲染辅助', 'Godot项目可运行，主循环跑通', '安装Godot 4.x', 2.0, 'M1: 空项目跑通'),
-    ('P2', '游戏数据', '建立配置驱动的卡牌/卡组数据', 'B1常量 B2卡牌 B3卡组 B4预设', '卡牌数据可查可抽', 'P1', 3.0, 'M2: 数据层完成'),
-    ('P3', '核心战斗', '实现实时双向推进+碰撞+战斗', 'C1循环 C2单位 C3移动 C4战斗', '单位能走能打', 'P2', 4.0, 'M3: 核心玩法可玩'),
-    ('P4', '扩展战斗', '阵法/法术/长老/灵力/胜负', 'C5-C11 D1AI', '完整战斗流程', 'P3', 6.0, 'M4: 一局完整对战'),
-    ('P5', 'AI系统', 'AI能自动出牌布阵', 'D1', 'PvE可玩', 'P4', 2.3, 'M5: AI对战可玩'),
-    ('P6', '渲染与UI', '完整画面+手牌+HUD+结算+引导', 'E1-E11', '游戏视觉完整', 'P4', 6.5, 'M6: 视觉完整可玩'),
-    ('P7', 'P0环境搭建', '安装Godot+插件+导出工具链', 'Godot 4.x + godot_for_minigame + GodotSteam', '开发环境就绪', '—', 1.0, 'M0: 环境就绪'),
-    ('P8', '跨平台导出', '微信/Steam/安卓三平台导出', 'I1抽象层 I2微信 I3Steam I4安卓', '三平台可导出', 'P6', 10.0, 'M7: 多平台导出成功'),
-    ('P9-P14', '社交养成变现(V1.5)', '登录/存档/排行/异步PvP/广告/内购', 'F1-F3 G1-G2', 'V1.5上线', 'P8', 8.0, 'M8: V1.5上线'),
-    ('P16-P18', '实时PvP(V2)', 'WebSocket+状态同步+匹配+段位', 'H1-H3', 'V2上线', 'P9', 6.0, 'M9: V2上线'),
+    ('P0', '环境搭建', '安装Godot+插件+导出工具链', 'Godot 4.x\ngodot_for_minigame\nGodotSteam', '开发环境就绪', '—', 1.0, 'M0 环境就绪'),
+    ('P1', '项目骨架', '搭建Godot骨架和autoload单例', 'A1主场景\nA2输入 A3事件总线\nA4场景 A5渲染辅助', 'Godot项目可运行', 'P0', 2.0, 'M1 空项目跑通'),
+    ('P2', '游戏数据', '配置驱动的卡牌/卡组数据', 'B1常量\nB2卡牌 B3卡组\nB4预设', '卡牌数据可查可抽', 'P1', 3.0, 'M2 数据层完成'),
+    ('P3', '核心战斗', '实时双向推进+碰撞+战斗', 'C1循环 C2单位\nC3移动 C4战斗', '单位能走能打', 'P2', 4.0, 'M3 核心玩法可玩'),
+    ('P4', '扩展战斗', '阵法/法术/长老/灵力/胜负', 'C5-C11 阵法法术\nD1 AI决策', '完整战斗流程', 'P3', 6.0, 'M4 完整对战'),
+    ('P5', 'AI系统', 'AI自动出牌布阵', 'D1 AI决策', 'PvE可玩', 'P4', 2.3, 'M5 AI对战可玩'),
+    ('P6', '渲染与UI', '完整画面+手牌+HUD+引导', 'E1-E11 渲染UI', '游戏视觉完整', 'P4', 6.5, 'M6 视觉完整'),
+    ('P8', '跨平台导出', '微信/Steam/安卓三平台', 'I1抽象层\nI2微信 I3Steam\nI4安卓', '三平台可导出', 'P6', 10.0, 'M7 多平台导出'),
+    ('P9-P14', '社交养成变现', '登录/存档/排行/广告/内购 (V1.5)', 'F1登录 F2异步PvP\nF3排行 G1养成 G2变现', 'V1.5上线', 'P8', 8.0, 'M8 V1.5上线'),
+    ('P16-P18', '实时PvP (V2)', 'WebSocket+同步+匹配+段位', 'H1网络 H2同步\nH3匹配段位', 'V2上线', 'P9', 6.0, 'M9 V2上线'),
 ]
-for r, p in enumerate(phases, 3):
+col_widths_1 = [10, 16, 30, 24, 22, 12, 9, 18]
+for i, w in enumerate(col_widths_1, 1):
+    ws1.column_dimensions[get_column_letter(i)].width = w
+
+r = 3
+for p in phases:
     for c, v in enumerate(p, 1):
         cell = ws1.cell(row=r, column=c, value=v)
-        apply_style(cell, ST_PHASE if c <= 2 else ST_L3)
-        if c == 7:
-            cell.alignment = Alignment('center', 'center')
-for i, w in enumerate([8, 14, 30, 28, 22, 14, 10, 16], 1):
-    ws1.column_dimensions[get_column_letter(i)].width = w
+        if c <= 2:
+            style_cell(cell, mk_font(11, True, C_DARK), mk_fill(C_PHASE_BG), mk_align('center', 'center'))
+        elif c == 7:
+            style_cell(cell, mk_font(11, True), mk_fill(C_L3_BG), mk_align('center', 'center'))
+        else:
+            style_cell(cell, mk_font(10), mk_fill(C_L3_BG if r % 2 else C_L3_ALT_BG), mk_align('left', 'center'))
+    ws1.row_dimensions[r].height = calc_row_height(list(p), col_widths_1)
+    r += 1
+# 合计行
+ws1.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
+style_cell(ws1.cell(row=r, column=1, value='合计'), mk_font(12, True, C_WHITE), mk_fill(C_L1_BG), mk_align('center', 'center'))
+style_cell(ws1.cell(row=r, column=7, value=f'=SUM(G3:G{r-1})'), mk_font(12, True, C_WHITE), mk_fill(C_L1_BG), mk_align('center', 'center'))
+ws1.merge_cells(start_row=r, start_column=8, end_row=r, end_column=8)
+style_cell(ws1.cell(row=r, column=8, value='总工时'), mk_font(11, True, C_WHITE), mk_fill(C_L1_BG), mk_align('center', 'center'))
+ws1.row_dimensions[r].height = 30
 ws1.freeze_panes = 'A3'
 
-# ===== Sheet 2: 开发主表 =====
+# ============================================================
+# Sheet 2: 开发主表
+# ============================================================
 MAIN = '2.开发主表'
 ws2 = wb.create_sheet(MAIN)
 ws2.merge_cells('A1:O1')
-apply_style(ws2['A1'], ST_TITLE); ws2['A1'] = '《宗门论道》开发主表（Godot GDScript版）'
+style_cell(ws2['A1'], mk_font(16, True, C_WHITE), mk_fill(C_TITLE_BG), mk_align('center', 'center'))
+ws2['A1'] = '《宗门论道》开发主表（Godot GDScript版）'
+ws2.row_dimensions[1].height = 38
+
 main_headers = ['层级', '编号', '阶段', '系统', '模块', '任务名称', '实现原理', '函数签名', '文件路径', '输入输出', '前置依赖', '工时h', '完成标准', '版本', '状态']
 for i, h in enumerate(main_headers, 1):
-    apply_style(ws2.cell(row=2, column=i, value=h), ST_HEAD)
-# 完成标准字典（GDScript版）
+    style_cell(ws2.cell(row=2, column=i, value=h),
+               mk_font(10, True, C_WHITE), mk_fill(C_HEAD_BG), mk_align('center', 'center'))
+ws2.row_dimensions[2].height = 32
+
+# 完成标准字典
 CRITERIA = {
     'A1.01':'①Godot项目能打开 ②_process每帧打印 ③运行无报错',
     'A1.02':'①场景切换后on_update调用 ②delta值合理(0.016)',
@@ -221,102 +282,132 @@ CRITERIA = {
     'I4.03':'①谷歌支付 ②回调正确',
     'I4.04':'①上架成功 ②可下载',
 }
+
+col_widths_2 = [5, 7, 5, 5, 14, 16, 38, 26, 24, 14, 12, 6, 30, 6, 7]
+for i, w in enumerate(col_widths_2, 1):
+    ws2.column_dimensions[get_column_letter(i)].width = w
+
 r = 3
 alt = False
 for d in D:
     if d[0] == 'L1':
         ws2.merge_cells(start_row=r, start_column=1, end_row=r, end_column=15)
-        apply_style(ws2.cell(row=r, column=1, value=d[4]), ST_L1)
+        cell = ws2.cell(row=r, column=1, value=f'  {d[4]}')
+        style_cell(cell, mk_font(13, True, C_WHITE), mk_fill(C_L1_BG), mk_align('left', 'center'))
         for c in range(2, 16):
             ws2.cell(row=r, column=c).border = BORDER
+            ws2.cell(row=r, column=c).fill = mk_fill(C_L1_BG)
+        ws2.row_dimensions[r].height = 28
         r += 1; alt = False; continue
     if d[0] == 'L2':
         ws2.merge_cells(start_row=r, start_column=1, end_row=r, end_column=15)
-        apply_style(ws2.cell(row=r, column=1, value=f'  {d[5]}  [{d[2]}]'), ST_L2)
+        cell = ws2.cell(row=r, column=1, value=f'    ▸ {d[5]}  [{d[2]}]')
+        style_cell(cell, mk_font(11, True, C_DARK), mk_fill(C_L2_BG), mk_align('left', 'center'))
         for c in range(2, 16):
             ws2.cell(row=r, column=c).border = BORDER
+            ws2.cell(row=r, column=c).fill = mk_fill(C_L2_BG)
+        ws2.row_dimensions[r].height = 24
         r += 1; alt = False; continue
     # L3
     code = d[1]
     criteria = CRITERIA.get(code, '')
     values = [d[0], d[1], d[2], d[3], d[5], d[6], d[7], d[8], d[9], d[10], d[11], d[12], criteria, d[13], d[14]]
+    bg = C_L3_ALT_BG if alt else C_L3_BG
     for c, v in enumerate(values, 1):
         cell = ws2.cell(row=r, column=c, value=v)
-        if c in (7, 8):  # 实现原理/函数签名
-            apply_style(cell, ST_CODE)
+        if c in (7, 8, 9):  # 实现原理/函数签名/文件路径
+            style_cell(cell, mk_font(9, name=MONO), mk_fill(C_CODE_BG), mk_align('left', 'center'))
         elif c == 13:  # 完成标准
-            apply_style(cell, ST_CRIT)
+            style_cell(cell, mk_font(9, color='7F6000'), mk_fill(C_CRIT_BG), mk_align('left', 'center'))
+        elif c in (1, 2, 3, 12, 14, 15):  # 居中列
+            style_cell(cell, mk_font(10), mk_fill(bg), mk_align('center', 'center'))
         else:
-            apply_style(cell, ST_L3_ALT if alt else ST_L3)
-        if c == 15:  # 状态列着色
-            if v == '待办': cell.fill = PatternFill('solid', fgColor=ST_TODO)
-            elif v == '进行中': cell.fill = PatternFill('solid', fgColor=ST_DOING)
-            elif v == '完成': cell.fill = PatternFill('solid', fgColor=ST_DONE)
-        if c in (1, 2, 3, 12, 14, 15):
-            cell.alignment = Alignment('center', 'center', wrap_text=True)
+            style_cell(cell, mk_font(10), mk_fill(bg), mk_align('left', 'center'))
+        if c == 15:  # 状态着色
+            if v == '待办': cell.fill = mk_fill(C_TODO)
+            elif v == '进行中': cell.fill = mk_fill(C_DOING)
+            elif v == '完成': cell.fill = mk_fill(C_DONE)
+    ws2.row_dimensions[r].height = calc_row_height(values, col_widths_2)
     r += 1; alt = not alt
 last_row = r - 1
-widths = [6, 8, 6, 6, 16, 18, 40, 28, 26, 16, 14, 7, 32, 7, 8]
-for i, w in enumerate(widths, 1):
-    ws2.column_dimensions[get_column_letter(i)].width = w
-ws2.freeze_panes = 'A3'
+ws2.freeze_panes = 'G3'
 ws2.auto_filter.ref = f'A2:O{last_row}'
 
-# ===== Sheet 3: 进度统计 =====
+# ============================================================
+# Sheet 3: 进度统计
+# ============================================================
 ws3 = wb.create_sheet('3.进度统计')
 ws3.merge_cells('A1:F1')
-apply_style(ws3['A1'], ST_TITLE); ws3['A1'] = '进度统计（自动计算）'
+style_cell(ws3['A1'], mk_font(16, True, C_WHITE), mk_fill(C_TITLE_BG), mk_align('center', 'center'))
+ws3['A1'] = '进度统计（自动计算）'
+ws3.row_dimensions[1].height = 38
+
 for i, h in enumerate(['阶段', '总任务数', '完成数', '进行中', '待办', '完成率'], 1):
-    apply_style(ws3.cell(row=2, column=i, value=h), ST_HEAD)
-phase_map = {
-    'P1': 'P1 项目骨架', 'P2': 'P2 游戏数据', 'P3': 'P3 核心战斗', 'P4': 'P4 扩展战斗',
-    'P5': 'P5 AI系统', 'P6': 'P6 渲染UI', 'P7': 'P0 环境搭建', 'P8': 'P8 跨平台导出',
-    'P9': 'P9-14 社交养成', 'P16': 'P16-18 实时PvP',
-}
+    style_cell(ws3.cell(row=2, column=i, value=h),
+               mk_font(11, True, C_WHITE), mk_fill(C_HEAD_BG), mk_align('center', 'center'))
+ws3.row_dimensions[2].height = 28
+
+phase_map = [
+    ('P1', 'P1 项目骨架'), ('P2', 'P2 游戏数据'), ('P3', 'P3 核心战斗'), ('P4', 'P4 扩展战斗'),
+    ('P5', 'P5 AI系统'), ('P6', 'P6 渲染UI'), ('P7', 'P0 环境搭建'), ('P8', 'P8 跨平台导出'),
+    ('P9', 'P9-14 社交养成'), ('P16', 'P16-18 实时PvP'),
+]
 phase_codes = {
     'P1': ['P1'], 'P2': ['P2'], 'P3': ['P3'], 'P4': ['P4'], 'P5': ['P5'],
     'P6': ['P6'], 'P7': ['P7'], 'P8': ['P8'],
     'P9': ['P9','P10','P11','P12','P13','P14'], 'P16': ['P16','P17','P18'],
 }
+col_widths_3 = [22, 11, 11, 11, 11, 11]
+for i, w in enumerate(col_widths_3, 1):
+    ws3.column_dimensions[get_column_letter(i)].width = w
+
 r = 3
-for pid, pname in phase_map.items():
+for pid, pname in phase_map:
     codes = phase_codes[pid]
-    code_str = '+'.join([f'"{c}"' for c in codes])
+    code_str = ','.join([f'"{c}"' for c in codes])
     total_f = f'=SUMPRODUCT(--ISNUMBER(MATCH({MAIN}!C3:C{last_row},{{{code_str}}},0)))'
     done_f = f'=SUMPRODUCT(--ISNUMBER(MATCH({MAIN}!C3:C{last_row},{{{code_str}}},0))*({MAIN}!O3:O{last_row}="完成"))'
     doing_f = f'=SUMPRODUCT(--ISNUMBER(MATCH({MAIN}!C3:C{last_row},{{{code_str}}},0))*({MAIN}!O3:O{last_row}="进行中"))'
     todo_f = f'=SUMPRODUCT(--ISNUMBER(MATCH({MAIN}!C3:C{last_row},{{{code_str}}},0))*({MAIN}!O3:O{last_row}="待办"))'
-    pct_f = f'=IF(C{r}>0,D{r}/C{r},0)'
+    pct_f = f'=IF(B{r}>0,C{r}/B{r},0)'
+    bg = C_L3_ALT_BG if r % 2 == 0 else C_L3_BG
     for c, v in enumerate([pname, total_f, done_f, doing_f, todo_f, pct_f], 1):
         cell = ws3.cell(row=r, column=c, value=v)
-        apply_style(cell, ST_L3)
+        if c == 1:
+            style_cell(cell, mk_font(11, True, C_DARK), mk_fill(C_PHASE_BG), mk_align('left', 'center'))
+        else:
+            style_cell(cell, mk_font(11), mk_fill(bg), mk_align('center', 'center'))
         if c == 6: cell.number_format = '0.0%'
-        if c >= 2: cell.alignment = Alignment('center', 'center')
+    ws3.row_dimensions[r].height = 26
     r += 1
 # 合计行
 for c, v in enumerate(['合计', f'=SUM(B3:B{r-1})', f'=SUM(C3:C{r-1})', f'=SUM(D3:D{r-1})', f'=SUM(E3:E{r-1})', f'=IF(C{r}>0,C{r}/B{r},0)'], 1):
     cell = ws3.cell(row=r, column=c, value=v)
-    apply_style(cell, ST_L2)
+    style_cell(cell, mk_font(12, True, C_WHITE), mk_fill(C_L1_BG), mk_align('center', 'center'))
     if c == 6: cell.number_format = '0.0%'
-    if c >= 2: cell.alignment = Alignment('center', 'center')
-for i, w in enumerate([20, 10, 10, 10, 10, 10], 1):
-    ws3.column_dimensions[get_column_letter(i)].width = w
+ws3.row_dimensions[r].height = 30
 ws3.freeze_panes = 'A3'
 
-# ===== Sheet 4: 卡牌数据 =====
+# ============================================================
+# Sheet 4: 卡牌数据
+# ============================================================
 ws4 = wb.create_sheet('4.卡牌数据')
 ws4.merge_cells('A1:K1')
-apply_style(ws4['A1'], ST_TITLE); ws4['A1'] = '卡牌数据表（cardId 与代码一致）'
+style_cell(ws4['A1'], mk_font(16, True, C_WHITE), mk_fill(C_TITLE_BG), mk_align('center', 'center'))
+ws4['A1'] = '卡牌数据表（cardId 与代码一致）'
+ws4.row_dimensions[1].height = 38
+
 card_headers = ['cardId', '名称', '阵营', '类型', '费用', '血量', '攻击', '移速', '范围', '特性', '稀有度']
 for i, h in enumerate(card_headers, 1):
-    apply_style(ws4.cell(row=2, column=i, value=h), ST_HEAD)
+    style_cell(ws4.cell(row=2, column=i, value=h),
+               mk_font(10, True, C_WHITE), mk_fill(C_HEAD_BG), mk_align('center', 'center'))
+ws4.row_dimensions[2].height = 28
+
 cards = [
-    # 攻方-人物
     ('beast_disciple', '宗门御兽弟子', '攻方', '单位', 3, 5, 1, 0.8, 0, '控制兽当肉盾', '凡品'),
     ('body_disciple', '宗门体修弟子', '攻方', '单位', 2, 4, 2, 1.0, 0, '普通近战', '凡品'),
     ('sword_disciple', '宗门剑修弟子', '攻方', '单位', 3, 2, 3, 1.0, 3, '远程飞剑', '凡品'),
     ('elder_jindan', '金丹期长老', '攻方', '精英', 6, 8, 4, 0.8, 1, '5秒随机技能', '宝品'),
-    # 攻方-技能
     ('wan_jian', '万剑归宗', '攻方', '法术', 4, 0, 0, 0, 0, '全员+1攻+加速', '灵品'),
     ('wu_lei', '五雷正法', '攻方', '法术', 4, 0, 0, 0, 3, '范围AOE伤害4', '灵品'),
     ('yu_feng', '御风诀', '攻方', '法术', 2, 0, 0, 0, 0, '单体+0.5速5秒', '凡品'),
@@ -325,39 +416,56 @@ cards = [
     ('yi_shan', '移山倒海', '攻方', '法术', 5, 0, 0, 0, 0, '推后2格+1伤', '宝品'),
     ('kun_xian', '困仙索', '攻方', '法术', 3, 0, 0, 0, 0, '单体stun2秒', '灵品'),
     ('tian_lei', '天雷诀', '攻方', '法术', 4, 0, 0, 0, 3, '范围伤害4', '灵品'),
-    # 守方-阵法
     ('jiemai_formation', '截脉阵', '守方', '阵法', 2, 4, 2, 0, 1, '基础拦截', '凡品'),
     ('hanshuang_formation', '寒霜阵', '守方', '阵法', 3, 3, 1, 0, 1, '命中减速1回合', '凡品'),
     ('wanren_formation', '万刃阵', '守方', '阵法', 4, 5, 3, 0, 1, '高输出拦截', '灵品'),
     ('fanzhen_formation', '反震阵', '守方', '阵法', 3, 3, 0, 0, 1, '反伤50%', '灵品'),
     ('tianluo_formation', '天罗阵', '守方', '阵法', 5, 6, 2, 0, 3, '范围拦截', '宝品'),
-    # 守方-拦截单位
     ('ying_jian', '影剑', '守方', '单位', 3, 3, 3, 1.5, 1, '冲向最近敌', '凡品'),
     ('huti_jianling', '护体剑灵', '守方', '单位', 4, 5, 2, 0, 1, '大殿临时护盾', '灵品'),
     ('guardian_beast', '守门灵兽', '守方', '单位', 3, 6, 1, 0.6, 1, '高血量肉盾', '凡品'),
-    # 长老技能卡（通用）
     ('elder_flying_sword', '长老·飞剑诀', '通用', '技能', 0, 0, 0, 0, 3, '长老随机技-AOE', '宝品'),
     ('elder_pill', '长老·丹药', '通用', '技能', 0, 0, 0, 0, 0, '长老随机技-治疗', '宝品'),
     ('elder_talisman', '长老·符箓', '通用', '技能', 0, 0, 0, 0, 3, '长老随机技-天雷', '宝品'),
 ]
+# 阵营颜色
+SIDE_COLORS = {'攻方': 'FDE9D9', '守方': 'D6EAF8', '通用': 'E8DAEF'}
+col_widths_4 = [20, 16, 6, 6, 6, 6, 6, 6, 6, 20, 8]
+for i, w in enumerate(col_widths_4, 1):
+    ws4.column_dimensions[get_column_letter(i)].width = w
+
 r = 3
 for card in cards:
+    side = card[2]
     for c, v in enumerate(card, 1):
         cell = ws4.cell(row=r, column=c, value=v)
-        apply_style(cell, ST_L3_ALT if (r % 2 == 0) else ST_L3)
-        if c in (1, 4, 5, 6, 7, 8, 9):
-            cell.alignment = Alignment('center', 'center')
+        bg = C_L3_ALT_BG if r % 2 == 0 else C_L3_BG
+        if c == 1:  # cardId代码列
+            style_cell(cell, mk_font(9, name=MONO), mk_fill(C_CODE_BG), mk_align('left', 'center'))
+        elif c == 3:  # 阵营列着色
+            style_cell(cell, mk_font(10, True), mk_fill(SIDE_COLORS.get(side, bg)), mk_align('center', 'center'))
+        elif c in (4, 5, 6, 7, 8, 9, 11):
+            style_cell(cell, mk_font(10), mk_fill(bg), mk_align('center', 'center'))
+        else:
+            style_cell(cell, mk_font(10), mk_fill(bg), mk_align('left', 'center'))
+    ws4.row_dimensions[r].height = 22
     r += 1
-for i, w in enumerate([18, 16, 6, 6, 6, 6, 6, 6, 6, 20, 8], 1):
-    ws4.column_dimensions[get_column_letter(i)].width = w
 ws4.freeze_panes = 'A3'
 
-# ===== Sheet 5: 数值配置 =====
+# ============================================================
+# Sheet 5: 数值配置
+# ============================================================
 ws5 = wb.create_sheet('5.数值配置')
 ws5.merge_cells('A1:D1')
-apply_style(ws5['A1'], ST_TITLE); ws5['A1'] = '核心数值配置（GDScript Const.gd）'
+style_cell(ws5['A1'], mk_font(16, True, C_WHITE), mk_fill(C_TITLE_BG), mk_align('center', 'center'))
+ws5['A1'] = '核心数值配置（GDScript Const.gd）'
+ws5.row_dimensions[1].height = 38
+
 for i, h in enumerate(['参数', '数值', '说明', 'GDScript常量名'], 1):
-    apply_style(ws5.cell(row=2, column=i, value=h), ST_HEAD)
+    style_cell(ws5.cell(row=2, column=i, value=h),
+               mk_font(11, True, C_WHITE), mk_fill(C_HEAD_BG), mk_align('center', 'center'))
+ws5.row_dimensions[2].height = 28
+
 configs = [
     ('棋盘长度', '9格', '双方大殿间隔', 'BOARD_LENGTH'),
     ('大殿血量', '30', '到0即败', 'HALL_HP'),
@@ -376,22 +484,34 @@ configs = [
     ('AI思考间隔', '3秒', 'AI出牌频率', 'AI_THINK_INTERVAL'),
     ('护盾最大', '3层', '金钟罩', 'MAX_SHIELD'),
 ]
+col_widths_5 = [18, 14, 24, 24]
+for i, w in enumerate(col_widths_5, 1):
+    ws5.column_dimensions[get_column_letter(i)].width = w
+
 r = 3
 for cfg in configs:
+    bg = C_L3_ALT_BG if r % 2 == 0 else C_L3_BG
     for c, v in enumerate(cfg, 1):
         cell = ws5.cell(row=r, column=c, value=v)
-        apply_style(cell, ST_L3_ALT if (r % 2 == 0) else ST_L3)
-        if c == 4: apply_style(cell, ST_CODE)
-        if c in (2,): cell.alignment = Alignment('center', 'center')
+        if c == 4:
+            style_cell(cell, mk_font(9, name=MONO), mk_fill(C_CODE_BG), mk_align('left', 'center'))
+        elif c == 2:
+            style_cell(cell, mk_font(11, True, C_DARK), mk_fill(bg), mk_align('center', 'center'))
+        else:
+            style_cell(cell, mk_font(10), mk_fill(bg), mk_align('left', 'center'))
+    ws5.row_dimensions[r].height = 24
     r += 1
-for i, w in enumerate([18, 12, 24, 22], 1):
-    ws5.column_dimensions[get_column_letter(i)].width = w
 ws5.freeze_panes = 'A3'
 
-# ===== Sheet 6: AI提问指南 =====
+# ============================================================
+# Sheet 6: AI提问指南
+# ============================================================
 ws6 = wb.create_sheet('6.AI提问指南')
 ws6.merge_cells('A1:B1')
-apply_style(ws6['A1'], ST_TITLE); ws6['A1'] = '如何向AI提问开发（Godot版）'
+style_cell(ws6['A1'], mk_font(16, True, C_WHITE), mk_fill(C_TITLE_BG), mk_align('center', 'center'))
+ws6['A1'] = '如何向AI提问开发（Godot版）'
+ws6.row_dimensions[1].height = 38
+
 guide = [
     ('使用方法', '把下表内容完整复制发给AI，让AI按规范实现'),
     ('提问模板', '请实现以下Godot功能：\n【编号】{编号}\n【任务】{任务名称}\n【实现原理】{实现原理}\n【函数签名】{函数签名}\n【文件路径】{文件路径}\n【输入输出】{输入输出}\n【前置依赖】{前置依赖}\n【完成标准】{完成标准}\n请用GDScript实现，遵循Godot 4.x规范。'),
@@ -402,21 +522,28 @@ guide = [
 ]
 r = 2
 for title, content in guide:
-    apply_style(ws6.cell(row=r, column=1, value=title), ST_L2)
+    style_cell(ws6.cell(row=r, column=1, value=title), mk_font(11, True, C_DARK), mk_fill(C_L2_BG), mk_align('center', 'center'))
     cell = ws6.cell(row=r, column=2, value=content)
-    apply_style(cell, ST_L3)
-    cell.alignment = Alignment('left', 'top', wrap_text=True)
-    ws6.row_dimensions[r].height = max(30, content.count('\n') * 18 + 20)
+    style_cell(cell, mk_font(10), mk_fill(C_L3_BG), mk_align('left', 'top'))
+    ws6.row_dimensions[r].height = max(30, content.count('\n') * 16 + 24)
     r += 1
 ws6.column_dimensions['A'].width = 18
-ws6.column_dimensions['B'].width = 90
+ws6.column_dimensions['B'].width = 88
 
-# ===== Sheet 7: 资源清单 =====
+# ============================================================
+# Sheet 7: 资源清单
+# ============================================================
 ws7 = wb.create_sheet('7.资源清单')
 ws7.merge_cells('A1:H1')
-apply_style(ws7['A1'], ST_TITLE); ws7['A1'] = '美术资源清单（Godot格式）'
+style_cell(ws7['A1'], mk_font(16, True, C_WHITE), mk_fill(C_TITLE_BG), mk_align('center', 'center'))
+ws7['A1'] = '美术资源清单（Godot格式）'
+ws7.row_dimensions[1].height = 38
+
 for i, h in enumerate(['资源ID', '名称', '类型', '尺寸px', '帧数', '格式', 'Godot路径', '说明'], 1):
-    apply_style(ws7.cell(row=2, column=i, value=h), ST_HEAD)
+    style_cell(ws7.cell(row=2, column=i, value=h),
+               mk_font(10, True, C_WHITE), mk_fill(C_HEAD_BG), mk_align('center', 'center'))
+ws7.row_dimensions[2].height = 28
+
 resources = [
     ('RES001', '山道背景', '背景', '720x1280', 1, 'PNG', 'res://assets/bg/mountain_path.png', '渐变绿'),
     ('RES002', '棋盘格子', 'UI', '720x200', 1, 'PNG', 'res://assets/ui/grid.png', '9列'),
@@ -452,24 +579,39 @@ resources = [
     ('RES032', '引导箭头', 'UI', '32x32', 1, 'PNG', 'res://assets/ui/arrow.png', '新手引导'),
     ('RES033', '引导高亮框', 'UI', '80x110', 1, 'PNG', 'res://assets/ui/highlight.png', '新手引导'),
 ]
+col_widths_7 = [8, 16, 8, 12, 6, 6, 42, 16]
+for i, w in enumerate(col_widths_7, 1):
+    ws7.column_dimensions[get_column_letter(i)].width = w
+
 r = 3
 for res in resources:
+    bg = C_L3_ALT_BG if r % 2 == 0 else C_L3_BG
     for c, v in enumerate(res, 1):
         cell = ws7.cell(row=r, column=c, value=v)
-        apply_style(cell, ST_L3_ALT if (r % 2 == 0) else ST_L3)
-        if c == 7: apply_style(cell, ST_CODE)
-        if c in (1, 3, 5, 6): cell.alignment = Alignment('center', 'center')
+        if c == 7:  # Godot路径代码列
+            style_cell(cell, mk_font(9, name=MONO), mk_fill(C_CODE_BG), mk_align('left', 'center'))
+        elif c in (1, 3, 5, 6):
+            style_cell(cell, mk_font(10), mk_fill(bg), mk_align('center', 'center'))
+        else:
+            style_cell(cell, mk_font(10), mk_fill(bg), mk_align('left', 'center'))
+    ws7.row_dimensions[r].height = 22
     r += 1
-for i, w in enumerate([8, 16, 8, 12, 6, 6, 40, 16], 1):
-    ws7.column_dimensions[get_column_letter(i)].width = w
 ws7.freeze_panes = 'A3'
 
-# ===== Sheet 8: 决策日志 =====
+# ============================================================
+# Sheet 8: 决策日志与问题
+# ============================================================
 ws8 = wb.create_sheet('8.决策日志与问题')
 ws8.merge_cells('A1:G1')
-apply_style(ws8['A1'], ST_TITLE); ws8['A1'] = '决策日志与已知问题'
+style_cell(ws8['A1'], mk_font(16, True, C_WHITE), mk_fill(C_TITLE_BG), mk_align('center', 'center'))
+ws8['A1'] = '决策日志与已知问题'
+ws8.row_dimensions[1].height = 38
+
 for i, h in enumerate(['类型', '编号', '日期', '标题', '决策/描述', '状态', '优先级'], 1):
-    apply_style(ws8.cell(row=2, column=i, value=h), ST_HEAD)
+    style_cell(ws8.cell(row=2, column=i, value=h),
+               mk_font(10, True, C_WHITE), mk_fill(C_HEAD_BG), mk_align('center', 'center'))
+ws8.row_dimensions[2].height = 28
+
 decisions = [
     ('决策', 'D001', '2026-08-01', '游戏题材', '修仙宗门大战，非飞剑/现代战争', '已执行', '高'),
     ('决策', 'D002', '2026-08-01', '玩法模式', '实时策略卡牌，双向推进', '已执行', '高'),
@@ -495,56 +637,110 @@ issues = [
     ('问题', 'I007', '2026-08-08', '纹理压缩格式', '微信ETC2/SteamS3TC/安卓ASTC，需按平台导出不同格式', '待解决', '低'),
     ('问题', 'I008', '2026-08-08', '苹果商店', 'iOS导出需Mac+iTunes Connect，暂不列入V1', '待解决', '低'),
 ]
+col_widths_8 = [8, 8, 12, 16, 42, 10, 8]
+for i, w in enumerate(col_widths_8, 1):
+    ws8.column_dimensions[get_column_letter(i)].width = w
+
+# 决策区域标题行
 r = 3
-for d in decisions + issues:
+ws8.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
+style_cell(ws8.cell(row=r, column=1, value='  ◆ 设计决策'), mk_font(12, True, C_WHITE), mk_fill(C_L1_BG), mk_align('left', 'center'))
+ws8.row_dimensions[r].height = 26
+r += 1
+for d in decisions:
+    bg = C_L3_ALT_BG if r % 2 == 0 else C_L3_BG
     for c, v in enumerate(d, 1):
         cell = ws8.cell(row=r, column=c, value=v)
-        apply_style(cell, ST_L3_ALT if (r % 2 == 0) else ST_L3)
-        if c == 6:
-            if v == '已执行' or v == '已解决': cell.fill = PatternFill('solid', fgColor=ST_DONE)
-            elif v == '待解决': cell.fill = PatternFill('solid', fgColor=ST_TODO)
-        if c in (1, 2, 3, 6, 7): cell.alignment = Alignment('center', 'center')
+        if c == 6:  # 状态
+            if v == '已执行': style_cell(cell, mk_font(10, True, '006100'), mk_fill(C_DONE), mk_align('center', 'center'))
+            elif v == '待解决': style_cell(cell, mk_font(10, True, '9C0006'), mk_fill(C_TODO), mk_align('center', 'center'))
+        elif c == 7:  # 优先级
+            color = '9C0006' if v == '高' else ('9C6500' if v == '中' else '375623')
+            style_cell(cell, mk_font(10, True, color), mk_fill(bg), mk_align('center', 'center'))
+        elif c in (1, 2, 3):
+            style_cell(cell, mk_font(10), mk_fill(bg), mk_align('center', 'center'))
+        else:
+            style_cell(cell, mk_font(10), mk_fill(bg), mk_align('left', 'center'))
+    ws8.row_dimensions[r].height = 24
     r += 1
-for i, w in enumerate([8, 8, 12, 16, 40, 10, 8], 1):
-    ws8.column_dimensions[get_column_letter(i)].width = w
+# 问题区域标题行
+ws8.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
+style_cell(ws8.cell(row=r, column=1, value='  ◆ 已知问题'), mk_font(12, True, C_WHITE), mk_fill(C_L1_BG), mk_align('left', 'center'))
+ws8.row_dimensions[r].height = 26
+r += 1
+for d in issues:
+    bg = C_L3_ALT_BG if r % 2 == 0 else C_L3_BG
+    for c, v in enumerate(d, 1):
+        cell = ws8.cell(row=r, column=c, value=v)
+        if c == 6:
+            if v == '已执行' or v == '已解决': style_cell(cell, mk_font(10, True, '006100'), mk_fill(C_DONE), mk_align('center', 'center'))
+            elif v == '待解决': style_cell(cell, mk_font(10, True, '9C0006'), mk_fill(C_TODO), mk_align('center', 'center'))
+        elif c == 7:
+            color = '9C0006' if v == '高' else ('9C6500' if v == '中' else '375623')
+            style_cell(cell, mk_font(10, True, color), mk_fill(bg), mk_align('center', 'center'))
+        elif c in (1, 2, 3):
+            style_cell(cell, mk_font(10), mk_fill(bg), mk_align('center', 'center'))
+        else:
+            style_cell(cell, mk_font(10), mk_fill(bg), mk_align('left', 'center'))
+    ws8.row_dimensions[r].height = 24
+    r += 1
 ws8.freeze_panes = 'A3'
 
-# ===== Sheet 9: 跨平台导出 =====
+# ============================================================
+# Sheet 9: 跨平台导出
+# ============================================================
 ws9 = wb.create_sheet('9.跨平台导出')
 ws9.merge_cells('A1:F1')
-apply_style(ws9['A1'], ST_TITLE); ws9['A1'] = '跨平台导出方案对比'
+style_cell(ws9['A1'], mk_font(16, True, C_WHITE), mk_fill(C_TITLE_BG), mk_align('center', 'center'))
+ws9['A1'] = '跨平台导出方案对比'
+ws9.row_dimensions[1].height = 38
+
 for i, h in enumerate(['平台', '导出方式', '关键插件/SDK', '审核要求', '包体限制', '注意事项'], 1):
-    apply_style(ws9.cell(row=2, column=i, value=h), ST_HEAD)
+    style_cell(ws9.cell(row=2, column=i, value=h),
+               mk_font(11, True, C_WHITE), mk_fill(C_HEAD_BG), mk_align('center', 'center'))
+ws9.row_dimensions[2].height = 28
+
 platforms = [
-    ('微信小游戏', 'godot_for_minigame插件', 'godot_for_minigame', '微信小游戏审核(内容+资质)', '主包4MB+分包20MB', '①需企业资质 ②WASM分包 ③wx.* API通过PlatformAdapter ④触屏优先'),
-    ('Steam', 'Godot原生Desktop导出', 'GodotSteam (GDExtension)', 'Steamworks审核(内容+年龄分级)', '无硬限制(建议<2GB)', '①需Steamworks账号 ②.exe+.pck ③成就/云存档 ④支持Mac/Linux'),
-    ('Google Play', 'Godot原生Android导出', 'GooglePlayBilling', '谷歌商店审核(内容+隐私政策)', '.aab格式', '①需Google Play开发者账号 ②keystore签名 ③目标API等级要求 ④触屏适配'),
-    ('iOS', 'Godot原生iOS导出(需Mac)', '—', 'App Store审核(严格)', '4GB', '①需Mac+Xcode ②Apple开发者账号 ③暂不列入V1'),
-    ('Web', 'Godot原生Web导出', '—', '无需审核', '建议<50MB', '①HTML5导出 ②不支持部分功能 ③可用于Demo'),
+    ('微信小游戏', 'godot_for_minigame插件', 'godot_for_minigame', '微信小游戏审核\n(内容+资质)', '主包4MB\n分包20MB', '①需企业资质\n②WASM分包\n③wx.* API通过PlatformAdapter\n④触屏优先'),
+    ('Steam', 'Godot原生\nDesktop导出', 'GodotSteam\n(GDExtension)', 'Steamworks审核\n(内容+年龄分级)', '无硬限制\n(建议<2GB)', '①需Steamworks账号\n②.exe+.pck\n③成就/云存档\n④支持Mac/Linux'),
+    ('Google Play', 'Godot原生\nAndroid导出', 'GooglePlayBilling', '谷歌商店审核\n(内容+隐私政策)', '.aab格式', '①需Google Play开发者账号\n②keystore签名\n③目标API等级要求\n④触屏适配'),
+    ('iOS', 'Godot原生iOS导出\n(需Mac)', '—', 'App Store审核\n(严格)', '4GB', '①需Mac+Xcode\n②Apple开发者账号\n③暂不列入V1'),
+    ('Web', 'Godot原生\nWeb导出', '—', '无需审核', '建议<50MB', '①HTML5导出\n②不支持部分功能\n③可用于Demo'),
 ]
+col_widths_9 = [14, 20, 20, 20, 14, 38]
+for i, w in enumerate(col_widths_9, 1):
+    ws9.column_dimensions[get_column_letter(i)].width = w
+
 r = 3
 for p in platforms:
+    bg = C_L3_ALT_BG if r % 2 == 0 else C_L3_BG
     for c, v in enumerate(p, 1):
         cell = ws9.cell(row=r, column=c, value=v)
-        apply_style(cell, ST_L3_ALT if (r % 2 == 0) else ST_L3)
-        cell.alignment = Alignment('left', 'center', wrap_text=True)
-        if c == 1: cell.alignment = Alignment('center', 'center')
-    ws9.row_dimensions[r].height = 60
+        if c == 1:
+            style_cell(cell, mk_font(11, True, C_DARK), mk_fill(C_PHASE_BG), mk_align('center', 'center'))
+        elif c in (2, 3):
+            style_cell(cell, mk_font(9, name=MONO), mk_fill(C_CODE_BG), mk_align('left', 'center'))
+        else:
+            style_cell(cell, mk_font(10), mk_fill(bg), mk_align('left', 'center'))
+    ws9.row_dimensions[r].height = calc_row_height(list(p), col_widths_9)
     r += 1
-for i, w in enumerate([14, 22, 22, 24, 16, 40], 1):
-    ws9.column_dimensions[get_column_letter(i)].width = w
 ws9.freeze_panes = 'A3'
 
-# ===== Sheet 10: 设计思路 =====
+# ============================================================
+# Sheet 10: 设计思路
+# ============================================================
 ws10 = wb.create_sheet('10.设计思路')
 ws10.merge_cells('A1:B1')
-apply_style(ws10['A1'], ST_TITLE); ws10['A1'] = '游戏设计思路'
+style_cell(ws10['A1'], mk_font(16, True, C_WHITE), mk_fill(C_TITLE_BG), mk_align('center', 'center'))
+ws10['A1'] = '游戏设计思路'
+ws10.row_dimensions[1].height = 38
+
 design = [
     ('一句话简介', '修仙版皇室战争：实时双向推进，攻方破阵摧殿，守方布阵拦截，120秒决胜负'),
     ('核心循环', '开局→灵力回复→出兵/布阵/施法→单位自动推进→碰撞战斗→击杀继续推进→摧毁大殿/时限到→结算'),
-    ('攻方策略', '①低费快攻(体修+御风诀) ②远程消耗(剑修+万剑归宗) ③精英一波(金丹长老+金钟罩)'),
-    ('守方策略', '①层层拦截(截脉+万刃) ②减速消耗(寒霜+困仙) ③反伤坦克(反震+灵兽)'),
-    ('平衡机制', '①灵力实时回复(不卡手) ②击杀后继续推进(进攻有收益) ③大殿护盾(防守有保障) ④阵法冷却(不能无脑布阵) ⑤加时赛(避免平局)'),
+    ('攻方策略', '①低费快攻(体修+御风诀)  ②远程消耗(剑修+万剑归宗)  ③精英一波(金丹长老+金钟罩)'),
+    ('守方策略', '①层层拦截(截脉+万刃)  ②减速消耗(寒霜+困仙)  ③反伤坦克(反震+灵兽)'),
+    ('平衡机制', '①灵力实时回复(不卡手)  ②击杀后继续推进(进攻有收益)  ③大殿护盾(防守有保障)  ④阵法冷却(不能无脑布阵)  ⑤加时赛(避免平局)'),
     ('单局节奏', '0-30秒: 试探出牌  30-60秒: 中期拉锯  60-90秒: 决战期  90-120秒: 收官/加时'),
     ('深度来源', '①20+卡牌组合  ②金丹长老随机技能(每局不同)  ③阵法位置策略  ④灵力管理  ⑤攻守时机'),
     ('Godot优势', '①跨平台一次开发  ②节点系统简化渲染  ③信号系统解耦  ④粒子/Tween内置  ⑤编辑器可视化UI'),
@@ -553,14 +749,13 @@ design = [
 ]
 r = 2
 for title, content in design:
-    apply_style(ws10.cell(row=r, column=1, value=title), ST_L2)
+    style_cell(ws10.cell(row=r, column=1, value=title), mk_font(11, True, C_WHITE), mk_fill(C_L2_BG), mk_align('center', 'center'))
     cell = ws10.cell(row=r, column=2, value=content)
-    apply_style(cell, ST_L3)
-    cell.alignment = Alignment('left', 'center', wrap_text=True)
-    ws10.row_dimensions[r].height = max(28, len(content) // 40 * 18 + 20)
+    style_cell(cell, mk_font(10), mk_fill(C_L3_BG), mk_align('left', 'center'))
+    ws10.row_dimensions[r].height = max(28, len(content) // 45 * 16 + 24)
     r += 1
 ws10.column_dimensions['A'].width = 16
-ws10.column_dimensions['B'].width = 90
+ws10.column_dimensions['B'].width = 88
 
 # ===== 保存 =====
 output = '/workspace/宗门论道_Godot开发管理工具包.xlsx'
@@ -569,4 +764,3 @@ print(f'✓ 已生成: {output}')
 print(f'  Sheet数: {len(wb.sheetnames)}')
 print(f'  L3任务数: {len(L3_ROWS)}')
 print(f'  主表行数: {last_row}')
-print(f'  Sheets: {wb.sheetnames}')
