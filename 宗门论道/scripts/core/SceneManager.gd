@@ -7,7 +7,6 @@
 ## ============================================================
 
 extends Node
-class_name SceneManager
 
 ## 已注册的场景: { 场景名: 资源路径 }
 var _scenes: Dictionary = {}
@@ -37,7 +36,7 @@ func register_all(scenes: Dictionary) -> void:
 ## 获取场景路径
 ## [param name] 场景名
 ## [return] 资源路径，不存在返回空字符串
-func get_path(name: String) -> String:
+func get_scene_path(name: String) -> String:
 	return _scenes.get(name, "")
 
 
