@@ -1,15 +1,18 @@
 ;
 ; 《宗门论道》Godot项目配置
 ; 引擎版本: Godot 4.x (建议4.6+)
+; 设计原则: 模块化 / 可扩展 / 跨平台
 ;
 [application]
 
 config/name="宗门论道"
 config/description="修仙宗门大战 - 实时策略卡牌"
 run/main_scene="res://scripts/scenes/Main.tscn"
-config/features=PackedStringArray("4.6", "Forward Plus")
+config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
 
+; ===== autoload单例（全局自动加载，各模块通过名称直接访问）=====
+; *前缀表示实例化节点，不加*则为纯脚本引用
 [autoload]
 
 EventBus="*res://scripts/core/EventBus.gd"
@@ -17,6 +20,7 @@ InputManager="*res://scripts/core/InputManager.gd"
 SceneManager="*res://scripts/core/SceneManager.gd"
 PlatformAdapter="*res://scripts/platform/PlatformAdapter.gd"
 
+; ===== 显示配置（竖屏720x1280，适配手机）=====
 [display]
 
 window/size/viewport_width=720
@@ -24,15 +28,8 @@ window/size/viewport_height=1280
 window/stretch/mode="canvas_items"
 window/stretch/aspect="keep"
 
-[input]
-
-tap={
-"deadzone": 0.5,
-"events": [Object(InputEventMouseButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"button_index":1,"canceled":false,"pressed":true,"position":Vector2(0, 0),"global_position":Vector2(0, 0),"factor":1.0,"button_mask":0)]
-}
-
+; ===== 渲染配置（使用兼容渲染器，确保跨平台+微信小游戏兼容）=====
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
-textures/canvas_textures/default_texture_filter=0
