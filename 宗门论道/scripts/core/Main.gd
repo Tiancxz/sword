@@ -7,7 +7,6 @@
 ## ============================================================
 
 extends Node2D
-class_name Main
 
 ## 游戏是否运行中（用于暂停/恢复）
 var _running: bool = true
