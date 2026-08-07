@@ -79,8 +79,6 @@ func _ready() -> void:
 	# 新增场景时在此添加一行即可
 	register_all({
 		"main": "res://scripts/scenes/Main.tscn",
-		# 以下场景在后续开发中逐步添加:
-		# "battle": "res://scripts/scenes/BattleScene.tscn",
-		# "result": "res://scripts/scenes/ResultScene.gd",
+		"battle": "res://scripts/scenes/BattleScene.tscn",
 	})
 	current_scene_name = "main"

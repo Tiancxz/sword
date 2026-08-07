@@ -1,0 +1,9 @@
+; BattleScene.tscn - 战斗场景
+; 节点结构: BattleScene(Node2D) 挂载 BattleScene.gd
+; 渲染全部在脚本的_draw中完成，无需额外子节点
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/scenes/BattleScene.gd" id="1_battle"]
+
+[node name="BattleScene" type="Node2D"]
+script = ExtResource("1_battle")
