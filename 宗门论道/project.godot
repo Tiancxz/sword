@@ -19,6 +19,9 @@ EventBus="*res://scripts/core/EventBus.gd"
 InputManager="*res://scripts/core/InputManager.gd"
 SceneManager="*res://scripts/core/SceneManager.gd"
 PlatformAdapter="*res://scripts/platform/PlatformAdapter.gd"
+Renderer="*res://scripts/core/Renderer.gd"
+ParticleHelper="*res://scripts/core/ParticleHelper.gd"
+AudioManager="*res://scripts/core/AudioManager.gd"
 
 ; ===== 显示配置（竖屏720x1280，适配手机）=====
 [display]

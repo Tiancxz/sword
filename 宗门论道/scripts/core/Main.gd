@@ -14,6 +14,9 @@ var _running: bool = true
 ## 累计运行时间（调试用）
 var _elapsed: float = 0.0
 
+## 是否需要重绘
+var _need_redraw: bool = true
+
 
 ## ============================================================
 ## 生命周期
@@ -25,10 +28,10 @@ func _ready() -> void:
 	print("  《宗门论道》启动")
 	print("  Godot版 v1.0")
 	print("========================================")
-	
+
 	# 初始化场景管理器（SceneManager是autoload，已自动实例化）
 	# SceneManager._ready()会自动注册场景，无需手动调用
-	
+
 	# 后续可在此添加: 加载存档、初始化平台适配等
 	print("[Main] 初始化完成")
 
@@ -39,11 +42,42 @@ func _process(delta: float) -> void:
 	# 暂停时不更新
 	if not _running:
 		return
-	
+
 	_elapsed += delta
-	
-	# 后续各场景的更新逻辑由场景自己处理
-	# Main只做全局帧计数（调试用）
+
+	# 分发逻辑更新到当前场景
+	on_update(delta)
+
+	# 触发重绘
+	if _need_redraw:
+		queue_redraw()
+
+
+## 逻辑更新（虚方法，子类/场景重写以实现具体逻辑）
+## [param delta] 帧间隔（秒）
+func on_update(delta: float) -> void:
+	pass
+
+
+## ============================================================
+## 画面渲染
+## ============================================================
+
+## 自定义绘制（Godot自动调用，需先queue_redraw触发）
+func _draw() -> void:
+	# 绘制调试信息：左上角显示运行时间
+	var font = ThemeDB.fallback_font
+	if font:
+		draw_string(font, Vector2(10, 20), "FPS: %.0f" % Engine.get_frames_per_second(), HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.5, 0.5, 0.5, 0.8))
+		draw_string(font, Vector2(10, 40), "Time: %.1fs" % _elapsed, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.5, 0.5, 0.5, 0.8))
+
+	# 标记已绘制，下帧按需再触发
+	_need_redraw = false
+
+
+## 请求重绘（外部调用以触发下次_draw）
+func request_redraw() -> void:
+	_need_redraw = true
 
 
 ## ============================================================
