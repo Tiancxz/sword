@@ -10,7 +10,6 @@
 ## ============================================================
 
 extends Node
-class_name PlatformAdapter
 
 ## 平台枚举
 enum Platform {
@@ -39,8 +38,8 @@ func _ready() -> void:
 ## [return] 当前平台枚举值
 func detect_platform() -> Platform:
 	# 检查是否在微信小游戏中（通过JavaScript桥接或插件标记）
-	# 微信导出插件会设置 Engine.has_feature("wechat")
-	if Engine.has_meta("platform_wechat") or Engine.has_feature("wechat"):
+	# 微信导出插件会设置 OS.has_feature("wechat")
+	if OS.has_feature("wechat"):
 		return Platform.WECHAT
 	
 	# 检查操作系统
