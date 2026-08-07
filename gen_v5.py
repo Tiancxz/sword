@@ -100,7 +100,7 @@ for mod,items in [
     D.append(('L1','','',SC,SN,'','','','','','','','','',''))
     D.append(('L2',mod.split('.')[0],'P1' if 'A6' not in mod and 'A7' not in mod else 'P6',SC,'',mod,'','','','','','','','V1',''))
     for it in items:
-        D.append((it[0],it[1],it[2],SC,'',mod,it[3],it[4],it[5],it[6],it[7],it[8],'V1','待办'))
+        D.append((it[0],it[1],it[2],SC,'',mod,it[3],it[4],it[5],it[6],it[7],it[8],it[9],'V1','待办'))
 
 # B.游戏数据
 SC,SN='B','B.游戏数据'
@@ -123,7 +123,7 @@ for mod,items in [
     D.append(('L1','','',SC,SN,'','','','','','','','','',''))
     D.append(('L2',mod.split('.')[0],'P2',SC,'',mod,'','','','','','','','V1',''))
     for it in items:
-        D.append((it[0],it[1],it[2],SC,'',mod,it[3],it[4],it[5],it[6],it[7],it[8],'V1','待办'))
+        D.append((it[0],it[1],it[2],SC,'',mod,it[3],it[4],it[5],it[6],it[7],it[8],it[9],'V1','待办'))
 
 # C.战斗逻辑
 SC,SN='C','C.战斗逻辑'
@@ -196,7 +196,7 @@ for mod,items in [
     ph = 'P3' if mod.startswith('C1') or mod.startswith('C2') or mod.startswith('C3') or mod.startswith('C4') else 'P4'
     D.append(('L2',mod.split('.')[0],ph,SC,'',mod,'','','','','','','','V1',''))
     for it in items:
-        D.append((it[0],it[1],it[2],SC,'',mod,it[3],it[4],it[5],it[6],it[7],it[8],'V1','待办'))
+        D.append((it[0],it[1],it[2],SC,'',mod,it[3],it[4],it[5],it[6],it[7],it[8],it[9],'V1','待办'))
 
 # D.AI系统
 SC,SN='D','D.AI系统'
@@ -209,7 +209,7 @@ for it in [
     ('L3','D1.04','P5','选牌逻辑','let playable=hand.map(...).filter(cost<=energy); if(empty) return null; if(ratio>0.5) sort by unit优先; else sort by formation优先; return [0].idx','AI.pickCard(energy,ratio,hand)','js/game/AI.js','energy+ratio+hand → int|null','B2.02',0.5),
     ('L3','D1.05','P5','布阵位置','easy: random pos; normal: 靠近己方大殿; hard: 找最快敌方单位前方布','AI.pickFormationPos(model)','js/game/AI.js','model → {gx,gy}','B1.01',0.5),
 ]:
-    D.append((it[0],it[1],it[2],SC,'','D1.AI决策',it[3],it[4],it[5],it[6],it[7],it[8],'V1','待办'))
+    D.append((it[0],it[1],it[2],SC,'','D1.AI决策',it[3],it[4],it[5],it[6],it[7],it[8],it[9],'V1','待办'))
 
 # E.渲染与UI
 SC,SN='E','E.渲染与UI'
@@ -264,7 +264,7 @@ for mod,items in [
     D.append(('L1','','',SC,SN,'','','','','','','','','',''))
     D.append(('L2',mod.split('.')[0],'P6',SC,'',mod,'','','','','','','','V1',''))
     for it in items:
-        D.append((it[0],it[1],it[2],SC,'',mod,it[3],it[4],it[5],it[6],it[7],it[8],'V1','待办'))
+        D.append((it[0],it[1],it[2],SC,'',mod,it[3],it[4],it[5],it[6],it[7],it[8],it[9],'V1','待办'))
 
 # F/G/H
 SC,SN='F','F.社交系统(V1.5)'
@@ -278,7 +278,7 @@ for it in [
     ('L3','F3.02','P12','分享','wx.shareAppMessage({title,imageUrl})','ShareManager.share(title,img)','js/social/ShareManager.js','title+img → void','—',0.5),
 ]:
     mod='F1.登录' if 'F1' in it[1] else ('F2.异步PvP' if 'F2' in it[1] else 'F3.排行分享')
-    D.append((it[0],it[1],it[2],SC,'',mod,it[3],it[4],it[5],it[6],it[7],it[8],'V1.5','待办'))
+    D.append((it[0],it[1],it[2],SC,'',mod,it[3],it[4],it[5],it[6],it[7],it[8],it[9],'V1.5','待办'))
 SC,SN='G','G.养成变现(V1.5)'
 D.append(('L1','','',SC,SN,'','','','','','','','','',''))
 for it in [
@@ -288,7 +288,7 @@ for it in [
     ('L3','G2.02','P14','内购','wx.requestPayment({timeStamp,nonceStr,package,signType,paySign,success:cb})','IAPManager.buy(productId,cb)','js/monetize/IAPManager.js','productId+cb → void','—',1.0),
 ]:
     mod='G1.养成' if 'G1' in it[1] else 'G2.变现'
-    D.append((it[0],it[1],it[2],SC,'',mod,it[3],it[4],it[5],it[6],it[7],it[8],'V1.5','待办'))
+    D.append((it[0],it[1],it[2],SC,'',mod,it[3],it[4],it[5],it[6],it[7],it[8],it[9],'V1.5','待办'))
 SC,SN='H','H.实时PvP(V2)'
 D.append(('L1','','',SC,SN,'','','','','','','','','',''))
 for it in [
@@ -300,7 +300,7 @@ for it in [
     ('L3','H3.02','P18','段位赛','if(win) elo+=20; else elo-=15; rank=eloToRank(elo)','RankSystem.updateRank(win)','js/net/RankSystem.js','win:bool → void','—',1.0),
 ]:
     mod='H1.网络' if 'H1' in it[1] else ('H2.同步' if 'H2' in it[1] else 'H3.匹配')
-    D.append((it[0],it[1],it[2],SC,'',mod,it[3],it[4],it[5],it[6],it[7],it[8],'V2','待办'))
+    D.append((it[0],it[1],it[2],SC,'',mod,it[3],it[4],it[5],it[6],it[7],it[8],it[9],'V2','待办'))
 
 print(f'数据准备完成: {len(D)}行, L3={len([d for d in D if d[0]=="L3"])}个功能点')
 # 保存数据供第二部分使用

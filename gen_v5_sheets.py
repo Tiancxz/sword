@@ -29,6 +29,46 @@ A_LT=Alignment(horizontal='left',vertical='top',wrap_text=True,indent=1)
 A_LM=Alignment(horizontal='left',vertical='center',wrap_text=True)
 BD=Border(left=Side(style='thin',color='D5D8DC'),right=Side(style='thin',color='D5D8DC'),top=Side(style='thin',color='D5D8DC'),bottom=Side(style='thin',color='D5D8DC'))
 
+# ===== 完成标准字典（每个L3任务的验收标准） =====
+CRITERIA={
+    'A1.01':'①node --check通过 ②Director.loop 60fps跑通','A1.02':'①scene.onUpdate被调用 ②scene为null不报错','A1.03':'①clearRect后画面清空 ②scene.onRender执行','A1.04':'①wx.createCanvas成功 ②屏幕尺寸获取正确',
+    'A2.01':'①onTouchStart回调触发 ②坐标正确','A2.02':'①regions数组有数据 ②id唯一','A2.03':'①点击区域内触发cb ②区域外不触发','A2.04':'①regions清空为[]',
+    'A3.01':'①listeners有对应事件 ②cb被加入数组','A3.02':'①所有cb被调用 ②data正确传递','A3.03':'①cb从数组移除 ②移除后不再触发',
+    'A4.01':'①scenes有对应场景 ②name唯一','A4.02':'①onExit被调用 ②onEnter被调用 ③current更新',
+    'A5.01':'①矩形正确绘制 ②颜色正确','A5.02':'①文字正确绘制 ②字体大小正确','A5.03':'①红绿条按比例 ②ratio=0时全红',
+    'A6.01':'①粒子数量正确 ②初始位置正确','A6.02':'①粒子位置更新 ②life<=0被过滤','A6.03':'①alpha渐变正确 ②渲染后alpha=1',
+    'A7.01':'①BGM播放 ②loop=true','A7.02':'①SFX播放 ②播放完销毁',
+    'B1.01':'①module.exports正确 ②常量值可引用','B2.01':'①19张卡牌数据完整 ②字段无缺失','B2.02':'①get(id)返回正确卡牌 ②不存在时console.error',
+    'B3.01':'①drawPile有数据 ②hand有3张 ③洗牌后顺序随机','B3.02':'①洗牌后顺序随机 ②不遗漏不重复','B3.03':'①手牌满返回null ②牌库空返回null ③正常抽牌','B3.04':'①2秒后抽牌 ②drawTimer归零','B3.05':'①灵力够返回true ②不够返回false','B3.06':'①手牌移除 ②drawTimer=2.0 ③返回cardId',
+    'B4.01':'①3套卡组各8张 ②cardId引用正确',
+    'C1.01':'①所有update被调用 ②time递减 ③不报错',
+    'C2.01':'①返回Unit对象 ②字段完整 ③facing正确','C2.02':'①buff被加入 ②类型正确','C2.03':'①slow减0.5 ②speed加0.5 ③stun返回0','C2.04':'①hp减少 ②hp<=0时state=dead ③返回伤害值',
+    'C3.01':'①walking时移动 ②遇敌变fighting ③到大殿damageHall','C3.02':'①同列敌人优先 ②最近距离优先 ③超射程返回null','C3.03':'①距离<=attackRange返回true','C3.04':'①owner=0到顶返回true ②owner=1到底返回true',
+    'C4.01':'①fighting时攻击 ②interval间隔正确 ③击杀后handleKill','C4.02':'①双方同时掉血 ②掉血量=对方atk','C4.03':'①只有目标掉血 ②攻击者不掉血','C4.04':'①范围内所有目标受伤 ②伤害值正确','C4.05':'①killer.state=walking ②killer.target=null','C4.06':'①有护盾不扣血 ②hp<=0时state=ended ③winner正确',
+    'C5.01':'①冷却中返回false ②布阵成功 ③扣灵力','C5.02':'①isActive=false跳过 ②范围内敌人受伤 ③interval间隔','C5.03':'①冷却中返回false ②可布阵返回true','C5.04':'①isActive=false ②silenceTimer倒数',
+    'C6.01':'①switch正确分支 ②参数传递正确','C6.02':'①全己方单位atk+1 ②speed buff 5秒','C6.03':'①范围内敌方受伤 ②伤害=4 ③含阵法','C6.04':'①目标获得speed buff ②持续5秒','C6.05':'①目标阵法isActive=false ②3秒后恢复','C6.06':'①己方hallShield=3','C6.07':'①目标y后退2格 ②受伤1点','C6.08':'①目标获得stun buff ②持续2秒','C6.09':'①所有目标受伤 ②伤害=4',
+    'C7.01':'①非长老跳过 ②5秒触发 ③timer归零','C7.02':'①4分支等概率 ②对应分支被调用','C7.03':'①范围内敌人受伤 ②伤害=3','C7.04':'①长老回血3 ②附近友军回血2','C7.05':'①前方敌人受伤 ②调用castTianLei','C7.06':'①灵兽被创建 ②加入units',
+    'C8.01':'①2.8秒+1 ②加时倍率1.5 ③不超上限','C8.02':'①每30秒+1 ②封顶10',
+    'C9.01':'①灵力够出兵 ②单位被创建 ③扣灵力','C9.02':'①灵力够施法 ②法术生效 ③扣灵力',
+    'C10.01':'①hallHp<=0返回winner ②都活着返回null','C10.02':'①time>0返回null ②平局进加时 ③加时60秒','C10.03':'①加时结束按灵力判 ②返回winner',
+    'C11.01':'①dead单位被移除 ②自爆触发','C11.02':'①被毁阵法移除 ②冷却8秒记录',
+    'D1.01':'①timer到间隔触发 ②think被调用','D1.02':'①能选牌出牌 ②无牌时return ③不卡死','D1.03':'①血量>60%返回0.7 ②血量<30%返回0.2','D1.04':'①过滤不可出牌 ②ratio>0.5优先unit','D1.05':'①easy随机 ②normal靠大殿 ③hard堵前方',
+    'E1.01':'①model初始化 ②BattleLogic创建 ③输入注册','E1.02':'①battleLogic.update被调用','E1.03':'①分层渲染顺序正确 ②无遗漏','E1.04':'①input清空 ②model=null',
+    'E2.01':'①渐变正确 ②铺满屏幕','E2.02':'①格子线均匀 ②BOARD_LENGTH条',
+    'E3.01':'①大殿色块正确 ②文字显示','E3.02':'①血条按比例 ②上下各一条','E3.03':'①震动偏移 ②shakeTimer递减',
+    'E4.01':'①按y排序 ②颜色区分 ③名字显示','E4.02':'①血条在单位上方 ②按比例',
+    'E5.01':'①光阵透明度 ②isActive区分颜色',
+    'E6.01':'①4张手牌显示 ②费用显示 ③不可出灰色','E6.02':'①点击切换选中 ②再点取消',
+    'E7.01':'①背景+前景 ②按比例 ③数字显示',
+    'E8.01':'①左右各半 ②红绿按比例','E8.02':'①倒计时显示 ②<=30秒变红',
+    'E9.01':'①点击选中 ②灵力不够return ③再点取消','E9.02':'①有选中才执行 ②出兵/布阵/施法正确 ③执行后取消',
+    'E10.01':'①胜负文字 ②颜色正确','E10.02':'①摧毁度百分比 ②双方对比','E10.03':'①切换到battle场景',
+    'E11.01':'①高亮第一张牌 ②箭头指向 ③点击后step=2','E11.02':'①高亮灵力条 ②3秒后step=3','E11.03':'①高亮阵法区 ②布阵后step=4','E11.04':'①箭头指大殿 ②2秒后结束',
+    'F1.01':'①wx.login成功 ②openid获取 ③存Storage','F1.02':'①数据库写入成功 ②数据完整','F2.01':'①challenge记录创建 ②返回_id','F2.02':'①对手布局加载 ②AI模拟启动','F3.01':'①开放数据域收到消息 ②排行绘制','F3.02':'①分享面板弹出 ②title/imageUrl正确',
+    'G1.01':'①level+1 ②hp/atk按公式增长','G1.02':'①star+1 ②境界正确进阶','G2.01':'①广告展示 ②看完触发cb','G2.02':'①支付调起 ②成功回调',
+    'H1.01':'①WebSocket连接 ②onOpen触发 ③ping心跳','H1.02':'①断线后重连 ②状态恢复','H2.01':'①action序列化发送 ②服务端收到','H2.02':'①state解析 ②model.applyState执行','H3.01':'①匹配请求发送 ②返回roomId','H3.02':'①elo增减 ②rank更新',
+}
+
 def set_w(ws,widths):
     for i,w in enumerate(widths,1): ws.column_dimensions[get_column_letter(i)].width=w
 def big_title(ws,text,cols,row=1,color=C_INK):
@@ -147,16 +187,17 @@ for q,a in thoughts:
 
 # ===== Sheet 2: 开发主表（加依赖+工时+行高自适应） =====
 ws=wb.create_sheet('2.开发主表');ws.sheet_view.showGridLines=False
-set_w(ws,[5,8,6,12,14,18,40,22,20,18,14,7,6,8])
-big_title(ws,'开发主表 — 从系统到函数，逐层展开（含阶段+文件路径+依赖+工时）',14)
-header_row(ws,['层级','编号','阶段','L1 系统','L2 模块','L3 子功能','L4 实现原理','L5 函数','文件路径','输入 → 输出','前置依赖','工时h','版本','状态'],2)
+set_w(ws,[5,8,6,12,14,18,40,22,20,18,14,7,28,6,8])
+big_title(ws,'开发主表 — 从系统到函数，逐层展开（含阶段+文件路径+依赖+工时+完成标准）',15)
+header_row(ws,['层级','编号','阶段','L1 系统','L2 模块','L3 子功能','L4 实现原理','L5 函数','文件路径','输入 → 输出','前置依赖','工时h','完成标准','版本','状态'],2)
 ws.freeze_panes='A3'
 r=3
 for row_data in D:
     row_list=list(row_data)
     while len(row_list)<15: row_list.append('')
     level=row_list[0];num=row_list[1];phase=row_list[2];sys_code=row_list[3];sys_name=row_list[4];mod=row_list[5];func=row_list[6];principle=row_list[7];fn=row_list[8];filepath=row_list[9];io=row_list[10];depends=row_list[11];hours=row_list[12];ver=row_list[13];status=row_list[14]
-    vals=[level,num,phase,sys_name if level=='L1' else '',mod,func,principle,fn,filepath,io,depends,hours,ver,status]
+    criteria=CRITERIA.get(num,'') if level=='L3' else ''
+    vals=[level,num,phase,sys_name if level=='L1' else '',mod,func,principle,fn,filepath,io,depends,hours,criteria,ver,status]
     for i,v in enumerate(vals,1):
         c=ws.cell(row=r,column=i,value=v);c.border=BD;c.alignment=A_LT
     lc=ws.cell(row=r,column=1);lc.font=F_TAG;lc.alignment=A_C
@@ -182,22 +223,23 @@ for row_data in D:
         dc=ws.cell(row=r,column=11);dc.font=F_CODE;dc.alignment=A_C
         if depends and depends!='—': dc.fill=PatternFill('solid',fgColor='FCF3CF')
         hc=ws.cell(row=r,column=12);hc.font=F_BOLD;hc.alignment=A_C;hc.fill=PatternFill('solid',fgColor='EBF5FB')
-        vc=ws.cell(row=r,column=13);vc.alignment=A_C
+        cc=ws.cell(row=r,column=13);cc.font=F_CODE;cc.alignment=A_LT;cc.fill=PatternFill('solid',fgColor='FEF9E7')
+        vc=ws.cell(row=r,column=14);vc.alignment=A_C
         if ver=='V1': vc.fill=PatternFill('solid',fgColor='D6EAF8')
         elif ver=='V1.5': vc.fill=PatternFill('solid',fgColor='FADBD8')
         elif ver=='V2': vc.fill=PatternFill('solid',fgColor='D5D8DC')
-        sc=ws.cell(row=r,column=14);sc.font=F_BOLD;sc.alignment=A_C
+        sc=ws.cell(row=r,column=15);sc.font=F_BOLD;sc.alignment=A_C
         if status=='待办': sc.fill=PatternFill('solid',fgColor=ST_TODO)
         elif status=='进行中': sc.fill=PatternFill('solid',fgColor=ST_DOING)
         elif status=='已完成': sc.fill=PatternFill('solid',fgColor=ST_DONE)
     r+=1
 last_row=r-1
-ws.conditional_formatting.add(f'N3:N{last_row}',FormulaRule(formula=['$N3="已完成"'],fill=PatternFill('solid',fgColor=ST_DONE)))
-ws.conditional_formatting.add(f'N3:N{last_row}',FormulaRule(formula=['$N3="进行中"'],fill=PatternFill('solid',fgColor=ST_DOING)))
-ws.conditional_formatting.add(f'N3:N{last_row}',FormulaRule(formula=['$N3="待办"'],fill=PatternFill('solid',fgColor=ST_TODO)))
+ws.conditional_formatting.add(f'O3:O{last_row}',FormulaRule(formula=['$O3="已完成"'],fill=PatternFill('solid',fgColor=ST_DONE)))
+ws.conditional_formatting.add(f'O3:O{last_row}',FormulaRule(formula=['$O3="进行中"'],fill=PatternFill('solid',fgColor=ST_DOING)))
+ws.conditional_formatting.add(f'O3:O{last_row}',FormulaRule(formula=['$O3="待办"'],fill=PatternFill('solid',fgColor=ST_TODO)))
 r+=1
-ws.merge_cells(start_row=r,start_column=1,end_row=r,end_column=14)
-c=ws.cell(row=r,column=1,value='层级：L1系统→L2模块→L3功能→L4原理→L5函数 | 黄色=有依赖(先做依赖项) | 工时h=预计工时 | 改状态→进度统计自动更新')
+ws.merge_cells(start_row=r,start_column=1,end_row=r,end_column=15)
+c=ws.cell(row=r,column=1,value='层级：L1系统→L2模块→L3功能→L4原理→L5函数 | 黄色=有依赖(先做依赖项) | 工时h=预计工时 | 完成标准=验收依据 | 改状态→进度统计自动更新')
 c.font=F_SMALL;c.alignment=A_L
 
 # ===== Sheet 3: 进度统计（加当前阶段标识） =====
@@ -214,10 +256,10 @@ sys_map=[('A','A.引擎框架','P1/P6'),('B','B.游戏数据','P2'),('C','C.战�
 r=4
 for code,name,phase_tag in sys_map:
     bg,fg=L1_FILLS.get(code,('333333','FFFFFF'))
-    total_f=f'=COUNTIFS({MAIN}!B3:B{last_row},"{code}*",{MAIN}!N3:N{last_row},"待办")+COUNTIFS({MAIN}!B3:B{last_row},"{code}*",{MAIN}!N3:N{last_row},"进行中")+COUNTIFS({MAIN}!B3:B{last_row},"{code}*",{MAIN}!N3:N{last_row},"已完成")'
-    done_f=f'=COUNTIFS({MAIN}!B3:B{last_row},"{code}*",{MAIN}!N3:N{last_row},"已完成")'
-    doing_f=f'=COUNTIFS({MAIN}!B3:B{last_row},"{code}*",{MAIN}!N3:N{last_row},"进行中")'
-    todo_f=f'=COUNTIFS({MAIN}!B3:B{last_row},"{code}*",{MAIN}!N3:N{last_row},"待办")'
+    total_f=f'=COUNTIFS({MAIN}!B3:B{last_row},"{code}*",{MAIN}!O3:O{last_row},"待办")+COUNTIFS({MAIN}!B3:B{last_row},"{code}*",{MAIN}!O3:O{last_row},"进行中")+COUNTIFS({MAIN}!B3:B{last_row},"{code}*",{MAIN}!O3:O{last_row},"已完成")'
+    done_f=f'=COUNTIFS({MAIN}!B3:B{last_row},"{code}*",{MAIN}!O3:O{last_row},"已完成")'
+    doing_f=f'=COUNTIFS({MAIN}!B3:B{last_row},"{code}*",{MAIN}!O3:O{last_row},"进行中")'
+    todo_f=f'=COUNTIFS({MAIN}!B3:B{last_row},"{code}*",{MAIN}!O3:O{last_row},"待办")'
     rate_f=f'=IF(D{r}=0,"0%",TEXT(E{r}/D{r},"0%"))'
     bar_f=f'=REPT("█",ROUND(E{r}/D{r}*20,0))&REPT("░",20-ROUND(E{r}/D{r}*20,0))'
     vals=['',name,phase_tag,total_f,done_f,doing_f,todo_f,rate_f,bar_f]
@@ -237,9 +279,9 @@ header_row(ws,['','阶段','阶段名称','总点数','已完成','进行中','�
 phase_map=[('P1','引擎骨架'),('P2','数据层'),('P3','核心战斗'),('P4','扩展战斗'),('P5','AI对手'),('P6','渲染交互'),('P7','测试平衡'),('P8','上线')]
 for code,name in phase_map:
     total_f=f'=COUNTIF({MAIN}!C3:C{last_row},"{code}")'
-    done_f=f'=COUNTIFS({MAIN}!C3:C{last_row},"{code}",{MAIN}!N3:N{last_row},"已完成")'
-    doing_f=f'=COUNTIFS({MAIN}!C3:C{last_row},"{code}",{MAIN}!N3:N{last_row},"进行中")'
-    todo_f=f'=COUNTIFS({MAIN}!C3:C{last_row},"{code}",{MAIN}!N3:N{last_row},"待办")'
+    done_f=f'=COUNTIFS({MAIN}!C3:C{last_row},"{code}",{MAIN}!O3:O{last_row},"已完成")'
+    doing_f=f'=COUNTIFS({MAIN}!C3:C{last_row},"{code}",{MAIN}!O3:O{last_row},"进行中")'
+    todo_f=f'=COUNTIFS({MAIN}!C3:C{last_row},"{code}",{MAIN}!O3:O{last_row},"待办")'
     rate_f=f'=IF(D{r}=0,"0%",TEXT(E{r}/D{r},"0%"))'
     bar_f=f'=REPT("█",ROUND(E{r}/D{r}*20,0))&REPT("░",20-ROUND(E{r}/D{r}*20,0))'
     vals=['',code,name,total_f,done_f,doing_f,todo_f,rate_f,bar_f]
@@ -252,28 +294,28 @@ ws.merge_cells(start_row=r,start_column=2,end_row=r,end_column=9)
 c=ws.cell(row=r,column=2,value='说明：改「2.开发主表」的"状态"列后，回到本表按Ctrl+Z再Ctrl+Y（或重新打开文件）即可刷新数字。')
 c.font=F_SMALL;c.alignment=A_L
 
-# ===== Sheet 4: 卡牌数据（加预设卡组） =====
+# ===== Sheet 4: 卡牌数据（加cardId+预设卡组） =====
 ws=wb.create_sheet('4.卡牌数据');ws.sheet_view.showGridLines=False
-set_w(ws,[16,10,8,8,8,8,8,30,8])
-big_title(ws,'卡牌数据表 — 改数值直接在这改',9)
+set_w(ws,[14,12,10,8,8,8,8,8,28,8])
+big_title(ws,'卡牌数据表 — 改数值直接在这改（cardId对应代码引用）',10)
 r=3
-sub_title(ws,'攻方·人物卡',9,r,C_RED);r+=1;header_row(ws,['名称','类型','费用','血量','攻击','移速','间隔','特性','稀有度'],r);r+=1
-for c_data in [('宗门体修弟子','普通弟子',2,4,2,1.0,1.0,'普通近战士兵，基础兵','凡品'),('宗门剑修弟子','普通弟子',3,3,3,0.9,1.3,'远程(射程3)，用飞剑，不掉血','凡品'),('宗门御兽弟子','普通弟子',3,6,2,0.8,1.2,'控兽当肉盾，高血低速','凡品'),('金丹期长老','精英长老',6,10,3,0.8,1.5,'每5s随机释放4分支技能','宝品')]:
+sub_title(ws,'攻方·人物卡',10,r,C_RED);r+=1;header_row(ws,['cardId','名称','类型','费用','血量','攻击','移速','间隔','特性','稀有度'],r);r+=1
+for c_data in [('body_disciple','宗门体修弟子','普通弟子',2,4,2,1.0,1.0,'普通近战士兵，基础兵','凡品'),('sword_disciple','宗门剑修弟子','普通弟子',3,3,3,0.9,1.3,'远程(射程3)，用飞剑，不掉血','凡品'),('beast_disciple','宗门御兽弟子','普通弟子',3,6,2,0.8,1.2,'控兽当肉盾，高血低速','凡品'),('golden_elder','金丹期长老','精英长老',6,10,3,0.8,1.5,'每5s随机释放4分支技能','宝品')]:
     for i,v in enumerate(c_data,1): cell=ws.cell(row=r,column=i,value=v);cell.font=F_CELL;cell.alignment=A_C;cell.border=BD
-    ws.cell(row=r,column=1).fill=PatternFill('solid',fgColor='FADBD8');ws.row_dimensions[r].height=24;r+=1
-r+=1;sub_title(ws,'守方·人物卡',9,r,C_BLUE);r+=1;header_row(ws,['名称','类型','费用','血量','攻击','射程','间隔','特性','稀有度'],r);r+=1
-for c_data in [('护山傀儡','防守单位',3,6,2,1,1.2,'缓慢移动肉盾守卫','凡品'),('护山灵兽','防守单位',4,8,2,1,1.0,'高血拦截，死亡自爆1伤','灵品'),('护法长老','精英长老',6,10,3,1,1.5,'镇守大殿前，每5s随机释放4分支','宝品')]:
+    ws.cell(row=r,column=1).font=F_CODE;ws.cell(row=r,column=2).fill=PatternFill('solid',fgColor='FADBD8');ws.row_dimensions[r].height=24;r+=1
+r+=1;sub_title(ws,'守方·人物卡',10,r,C_BLUE);r+=1;header_row(ws,['cardId','名称','类型','费用','血量','攻击','射程','间隔','特性','稀有度'],r);r+=1
+for c_data in [('guardian_puppet','护山傀儡','防守单位',3,6,2,1,1.2,'缓慢移动肉盾守卫','凡品'),('guardian_beast','护山灵兽','防守单位',4,8,2,1,1.0,'高血拦截，死亡自爆1伤','灵品'),('defender_elder','护法长老','精英长老',6,10,3,1,1.5,'镇守大殿前，每5s随机释放4分支','宝品')]:
     for i,v in enumerate(c_data,1): cell=ws.cell(row=r,column=i,value=v);cell.font=F_CELL;cell.alignment=A_C;cell.border=BD
-    ws.cell(row=r,column=1).fill=PatternFill('solid',fgColor='D6EAF8');ws.row_dimensions[r].height=24;r+=1
-r+=1;sub_title(ws,'阵法（双方通用）',9,r,C_TEAL);r+=1;header_row(ws,['名称','类型','费用','血量','攻击','射程','间隔','特性','稀有度'],r);r+=1
-for c_data in [('截脉阵','阵法',2,4,2,1,1.0,'基础拦截，便宜','凡品'),('寒霜阵','阵法',3,3,1,1,1.0,'命中后敌人移速-0.5(2s)','凡品'),('万刃阵','阵法',4,5,3,1,1.0,'高输出拦截','灵品'),('反震阵','阵法',3,3,0,'-',1.0,'反伤50%','灵品'),('天罗阵','阵法',5,6,2,1,1.0,'范围(打相邻所有敌人)','宝品')]:
+    ws.cell(row=r,column=1).font=F_CODE;ws.cell(row=r,column=2).fill=PatternFill('solid',fgColor='D6EAF8');ws.row_dimensions[r].height=24;r+=1
+r+=1;sub_title(ws,'阵法（双方通用）',10,r,C_TEAL);r+=1;header_row(ws,['cardId','名称','类型','费用','血量','攻击','射程','间隔','特性','稀有度'],r);r+=1
+for c_data in [('jiemai_formation','截脉阵','阵法',2,4,2,1,1.0,'基础拦截，便宜','凡品'),('hanshuang_formation','寒霜阵','阵法',3,3,1,1,1.0,'命中后敌人移速-0.5(2s)','凡品'),('wanren_formation','万刃阵','阵法',4,5,3,1,1.0,'高输出拦截','灵品'),('fanzhen_formation','反震阵','阵法',3,3,0,'-',1.0,'反伤50%','灵品'),('tianluo_formation','天罗阵','阵法',5,6,2,1,1.0,'范围(打相邻所有敌人)','宝品')]:
     for i,v in enumerate(c_data,1): cell=ws.cell(row=r,column=i,value=v);cell.font=F_CELL;cell.alignment=A_C;cell.border=BD
-    ws.cell(row=r,column=1).fill=PatternFill('solid',fgColor='E8F8F5');ws.row_dimensions[r].height=24;r+=1
-r+=1;sub_title(ws,'法术',9,r,C_PURPLE);r+=1;header_row(ws,['名称','类型','费用','效果','','','','偏向','稀有度'],r);r+=1
-for c_data in [('万剑归宗','法术',5,'全己方单位+1攻、移速+0.3(5s)','','','','攻方','宝品'),('五雷正法','法术',4,'区域3格内敌方受4伤','','','','通用','灵品'),('御风诀','法术',2,'指定己方单位移速+0.5(5s)','','','','通用','凡品'),('镇魂符','法术',3,'指定敌方阵法失效3秒','','','','通用','凡品'),('金钟罩','法术',3,'己方大殿免疫伤害3秒','','','','守方','灵品'),('移山倒海','法术',4,'区域敌人推后2格+1伤','','','','守方','灵品'),('困仙索','法术',2,'指定敌人定身2秒','','','','守方','凡品'),('天雷诀','法术',4,'范围3格内敌方受4伤(清兵)','','','','通用','灵品')]:
+    ws.cell(row=r,column=1).font=F_CODE;ws.cell(row=r,column=2).fill=PatternFill('solid',fgColor='E8F8F5');ws.row_dimensions[r].height=24;r+=1
+r+=1;sub_title(ws,'法术',10,r,C_PURPLE);r+=1;header_row(ws,['cardId','名称','类型','费用','效果','','','','偏向','稀有度'],r);r+=1
+for c_data in [('wan_jian','万剑归宗','法术',5,'全己方单位+1攻、移速+0.3(5s)','','','','攻方','宝品'),('wu_lei','五雷正法','法术',4,'区域3格内敌方受4伤','','','','通用','灵品'),('yu_feng','御风诀','法术',2,'指定己方单位移速+0.5(5s)','','','','通用','凡品'),('zhen_hun','镇魂符','法术',3,'指定敌方阵法失效3秒','','','','通用','凡品'),('jin_zhong','金钟罩','法术',3,'己方大殿免疫伤害3秒','','','','守方','灵品'),('yi_shan','移山倒海','法术',4,'区域敌人推后2格+1伤','','','','守方','灵品'),('kun_xian','困仙索','法术',2,'指定敌人定身2秒','','','','守方','凡品'),('tian_lei','天雷诀','法术',4,'范围3格内敌方受4伤(清兵)','','','','通用','灵品')]:
     for i,v in enumerate(c_data,1): cell=ws.cell(row=r,column=i,value=v);cell.font=F_CELL;cell.alignment=A_C;cell.border=BD
-    ws.cell(row=r,column=1).fill=PatternFill('solid',fgColor='F4ECF7');ws.row_dimensions[r].height=24;r+=1
-r+=1;sub_title(ws,'预设卡组（3套推荐配置，每套8张）',9,r,C_GOLD);r+=1
+    ws.cell(row=r,column=1).font=F_CODE;ws.cell(row=r,column=2).fill=PatternFill('solid',fgColor='F4ECF7');ws.row_dimensions[r].height=24;r+=1
+r+=1;sub_title(ws,'预设卡组（3套推荐配置，每套8张）',10,r,C_GOLD);r+=1
 set_w(ws,[16,10,14,14,14,14,14,14,14,14])
 header_row(ws,['卡组名','风格','卡1','卡2','卡3','卡4','卡5','卡6','卡7','卡8'],r);r+=1
 for p in [('速攻流','快速铺兵','体修弟子','体修弟子','剑修弟子','剑修弟子','御风诀','御风诀','截脉阵','金丹长老'),('控制流','阵法+法术','御兽弟子','护山傀儡','截脉阵','万刃阵','反震阵','镇魂符','金钟罩','金丹长老'),('均衡流','攻守兼备','体修弟子','剑修弟子','御兽弟子','截脉阵','万刃阵','五雷正法','困仙索','金丹长老')]:
@@ -379,6 +421,6 @@ wb.save(PATH)
 l3_count=len([d for d in D if d[0]=='L3'])
 print(f'Excel已生成: {PATH}')
 print(f'Sheet: {wb.sheetnames}')
-print(f'L3功能点: {l3_count}')
-print(f'卡牌: 20张 | 参数: 27个 | AI模板: 4个')
+print(f'L3功能点: {l3_count} (含完成标准)')
+print(f'卡牌: 20张(含cardId) | 参数: 27个 | AI模板: 4个')
 print(f'资源清单: 33个资源 | 决策: 10条 | 问题: 8条')
