@@ -1,0 +1,39 @@
+{
+    "subpackages": [
+        {
+            "name": "main",
+            "root": "res://",
+            "description": "主包：引擎运行时+核心逻辑脚本",
+            "max_size_mb": 4,
+            "includes": [
+                "scripts/core/",
+                "scripts/game/",
+                "scripts/config/",
+                "scripts/scenes/Main.tscn"
+            ]
+        },
+        {
+            "name": "art",
+            "root": "res://art/",
+            "description": "分包1：美术资源（纹理/精灵）",
+            "max_size_mb": 16,
+            "includes": [
+                "art/textures/",
+                "art/sprites/",
+                "art/ui/"
+            ]
+        },
+        {
+            "name": "audio",
+            "root": "res://audio/",
+            "description": "分包2：音频资源（BGM/音效）",
+            "max_size_mb": 8,
+            "includes": [
+                "audio/bgm/",
+                "audio/sfx/"
+            ]
+        }
+    ],
+    "description": "微信小游戏分包配置。主包<4MB限制，美术和音频资源拆分到子包按需加载。",
+    "load_strategy": "进入对应场景前调用wx.loadSubpackage(name)预加载"
+}
