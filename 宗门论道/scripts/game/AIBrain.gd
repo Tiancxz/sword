@@ -195,105 +195,25 @@ func _defense_priority(card_id: String) -> int:
 
 
 ## ============================================================
-## D1.05 - 布阵位置
+## D1.05 - 布阵位置（单路设计）
 ## ============================================================
 
-## 根据难度选择布阵列
-## [return] 列号0~4，-1=无合适位置
+## 选择布阵列
+## 单路设计下只有1列(列0)，始终返回0
+## 难度差异体现在D1.02决策核心的选牌策略上（是否偏防守）
+## [return] 列号（单路恒为0）
 func pick_formation_column() -> int:
-	match difficulty:
-		Difficulty.EASY:
-			return _random_column()
-		Difficulty.NORMAL:
-			return _near_own_hall()
-		Difficulty.HARD:
-			return _in_front_of_fastest_enemy()
-		_:
-			return _near_own_hall()
-
-
-## 简单难度：随机选一列
-func _random_column() -> int:
-	return randi() % 5
-
-
-## 普通难度：在己方大殿所在区域附近选一列（守方大殿在底部）
-## 守方阵法出生在底部(y=BOARD_LENGTH-1)，选己方半场中间列更稳
-func _near_own_hall() -> int:
-	# 倾向中间列（2,3,1），守方大殿居中
-	var weights: Array[int] = [1, 2, 3, 2, 1]  ## 中间权重高
-	var total: int = 0
-	for w in weights:
-		total += w
-	var r: int = randi() % total
-	var acc: int = 0
-	for col in range(5):
-		acc += weights[col]
-		if r < acc:
-			return col
-	return 2
-
-
-## 困难难度：在最快敌方单位的前方布阵拦截
-func _in_front_of_fastest_enemy() -> int:
-	if _logic == null:
-		return _near_own_hall()
-
-	# 找敌方（攻方）中最快且最靠前的单位
-	var best_col: int = -1
-	var best_score: float = -1.0
-
-	for u in _logic.get_units():
-		if not u is Unit or u.is_dead():
-			continue
-		if u.owner == player_id:
-			continue  # 跳过己方单位
-
-		# 评分：速度越高、越靠近己方大殿，优先级越高
-		var speed: float = u.get_effective_speed()
-		var advance: float = 0.0
-		# 攻方推进距离 = position_y（越大越接近守方大殿）
-		advance = u.position_y
-
-		# 综合评分
-		var score: float = speed * 2.0 + advance
-		if score > best_score:
-			best_score = score
-			best_col = u.grid_x
-
-	# 没有敌方单位时退化为普通策略
-	if best_col < 0:
-		return _near_own_hall()
-	return best_col
+	return 0
 
 
 ## ============================================================
-## 辅助：单位出兵列选择
+## 辅助：单位出兵列选择（单路设计）
 ## ============================================================
 
-## 选择单位出兵列（守方从底部出击，倾向分散到多列避免拥堵）
+## 选择单位出兵列
+## 单路设计下只有1列(列0)，始终返回0
 func _pick_unit_column() -> int:
-	# 统计每列已有己方单位数，选最少的列（分散布兵）
-	if _logic == null:
-		return randi() % 5
-
-	var col_counts: Array[int] = [0, 0, 0, 0, 0]
-	for u in _logic.get_units():
-		if u is Unit and not u.is_dead() and u.owner == player_id:
-			if u.grid_x >= 0 and u.grid_x < 5:
-				col_counts[u.grid_x] += 1
-
-	# 找单位最少的列（有多个则随机选）
-	var min_count: int = col_counts[0]
-	for c in col_counts:
-		min_count = min(min_count, c)
-
-	var candidates: Array = []
-	for col in range(5):
-		if col_counts[col] == min_count:
-			candidates.append(col)
-
-	return candidates[randi() % candidates.size()]
+	return 0
 
 
 ## ============================================================

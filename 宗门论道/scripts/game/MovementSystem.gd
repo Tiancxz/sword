@@ -118,6 +118,34 @@ static func check_hall_reach(unit: Unit) -> bool:
 
 
 ## ============================================================
+## 友方阻挡检测（单路排队推进）
+## ============================================================
+
+## 检查前进方向前方是否有友方单位阻挡
+## 单路设计下，单位不能穿过友方单位，形成排队推进
+## [param unit] 当前单位
+## [param model] 战斗模型
+## [return] true=被友方阻挡，应原地等待
+static func check_friendly_block(unit: Unit, model: Dictionary) -> bool:
+	for u in model.get("units", []):
+		if not u is Unit or u == unit:
+			continue
+		if u.is_dead():
+			continue
+		if u.owner != unit.owner:
+			continue  # 只检测友方
+		# 计算友方单位在前进方向上的距离
+		# 攻方facing=+1(向下)，前方是position_y更大的方向
+		# 守方facing=-1(向上)，前方是position_y更小的方向
+		var offset: float = (u.position_y - unit.position_y) * float(unit.facing)
+		# offset>0 表示友方在前进方向前方
+		# 距离<1.0格视为阻挡（单位间保持1格间距）
+		if offset > 0.0 and offset < 1.0:
+			return true
+	return false
+
+
+## ============================================================
 ## C3.01 - ★单位移动★
 ## ============================================================
 
@@ -145,6 +173,10 @@ static func move_unit(unit: Unit, delta: float, model: Dictionary) -> void:
 	if target != null and check_collision(unit, target):
 		unit.state = "fighting"
 		return
+
+	# 友方阻挡检测（单路排队推进）：前方有友方单位时原地等待
+	if check_friendly_block(unit, model):
+		return  # 被友方阻挡，原地等待，不切换状态
 
 	# 正常移动
 	var speed: float = unit.get_effective_speed()

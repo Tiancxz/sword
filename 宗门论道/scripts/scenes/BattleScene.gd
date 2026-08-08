@@ -32,11 +32,11 @@
 
 extends Node2D
 
-# ===== 棋盘布局常量 =====
-const BOARD_COLS: int = 5                ## 棋盘列数
-const CELL_W: float = 120.0             ## 格子宽度（像素）
+# ===== 棋盘布局常量（单路设计）=====
+const BOARD_COLS: int = 1                ## 棋盘列数（单路=1，所有单位在一条直线上推进）
+const CELL_W: float = 280.0             ## 格子宽度（单路加宽，居中显示）
 const CELL_H: float = 95.0              ## 格子高度（像素）
-const BOARD_LEFT: float = 60.0          ## 棋盘左边距（居中: (720-5*120)/2）
+const BOARD_LEFT: float = 220.0         ## 棋盘左边距（居中: (720-280)/2）
 const BOARD_TOP: float = 110.0          ## 棋盘顶部（HUD下方）
 
 # ===== UI布局常量 =====
@@ -261,7 +261,7 @@ func _draw_halls() -> void:
 			continue
 		# 大殿位置：攻方在 position_y=0（屏幕底部），守方在 position_y=BOARD_LENGTH-1（屏幕顶部）
 		var hall_pos_y: float = 0.0 if player.id == 0 else float(Const.BOARD_LENGTH - 1)
-		var screen_pos: Vector2 = _grid_to_screen(2, hall_pos_y)  ## 大殿居中在第2列
+		var screen_pos: Vector2 = _grid_to_screen(0, hall_pos_y)  ## 大殿居中在单路(列0)
 
 		# E3.03 受击特效：闪烁红色遮罩
 		var hit_alpha: float = 0.0
@@ -606,9 +606,9 @@ func _draw_hand() -> void:
 
 	# 操作提示
 	if font:
-		var hint: String = "点击手牌选中 → 点击棋盘列出牌"
+		var hint: String = "点击手牌选中 → 点击棋盘出牌"
 		if _selected_hand_idx >= 0:
-			hint = "已选中手牌，点击棋盘列放置（法术直接点任意位置施放）"
+			hint = "已选中手牌，点击棋盘放置（法术直接点任意位置施放）"
 		draw_string(font, Vector2(360, HAND_Y + HAND_H - 8), hint,
 			HORIZONTAL_ALIGNMENT_CENTER, -1, 12, Renderer.COLOR_GOLD)
 
@@ -715,17 +715,16 @@ func _handle_board_click(pos: Vector2) -> bool:
 		_selected_hand_idx = -1
 		return true
 
-	# 单位/阵法卡：需要点击棋盘列
+	# 单位/阵法卡：单路模式下点击棋盘区域直接出在列0
 	if pos.y < BOARD_TOP or pos.y > HAND_Y:
 		return false  # 点击非棋盘区，不处理
 
-	var col: int = _screen_to_col(pos.x)
-	if col < 0:
-		return false
+	# 单路设计：只有1列，点击棋盘任意位置都出在列0
+	var col: int = 0
 
 	var ok: bool = _logic.play_card(PLAYER_ID, _selected_hand_idx, col, null)
 	if ok:
-		print("[BattleScene] 玩家在列%d出牌: %s" % [col, card.get("name", "")])
+		print("[BattleScene] 玩家出牌: %s" % card.get("name", ""))
 		EventBus.card_played.emit(card_id, pos, PLAYER_ID)
 	else:
 		print("[BattleScene] 出牌失败（灵力不足或冷却中）")
