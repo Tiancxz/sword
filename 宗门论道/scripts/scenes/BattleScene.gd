@@ -254,7 +254,7 @@ func _draw_board_grid() -> void:
 ## ============================================================
 
 func _draw_halls() -> void:
-	var font = ThemeDB.fallback_font
+	var font = Renderer.get_font()
 	var players: Array = _logic.model.get("players", [])
 	for player in players:
 		if not player is Player:
@@ -286,8 +286,8 @@ func _draw_halls() -> void:
 		if player.id == PLAYER_ID:
 			label += "(你)"
 		if font:
-			draw_string(font, Vector2(screen_pos.x - 40, screen_pos.y - 5), label,
-				HORIZONTAL_ALIGNMENT_CENTER, -1, 18, Renderer.COLOR_GOLD)
+			draw_string(font, Vector2(screen_pos.x - 50, screen_pos.y - 8), label,
+				HORIZONTAL_ALIGNMENT_CENTER, -1, 24, Renderer.COLOR_GOLD)
 
 		# E3.02 大殿血条（大殿下方）
 		var bar_y: float = hall_rect.position.y + hall_rect.size.y + 5
@@ -299,14 +299,14 @@ func _draw_halls() -> void:
 		# 血量数值
 		if font:
 			var hp_text: String = "%d/%d" % [player.hall_hp, Const.HALL_HP]
-			draw_string(font, Vector2(screen_pos.x - 30, bar_y + 14), hp_text,
-				HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Renderer.COLOR_WHITE)
+			draw_string(font, Vector2(screen_pos.x - 40, bar_y + 18), hp_text,
+				HORIZONTAL_ALIGNMENT_CENTER, -1, 18, Renderer.COLOR_WHITE)
 
 		# 护盾显示
 		if player.hall_shield > 0:
 			if font:
 				draw_string(font, Vector2(screen_pos.x + 60, screen_pos.y - 5),
-					"护盾:%d" % player.hall_shield, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Renderer.COLOR_BLUE)
+					"护盾:%d" % player.hall_shield, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Renderer.COLOR_BLUE)
 
 
 ## 受击特效更新
@@ -329,7 +329,7 @@ func _on_hall_damaged(player_id: int, _damage: int) -> void:
 ## ============================================================
 
 func _draw_units() -> void:
-	var font = ThemeDB.fallback_font
+	var font = Renderer.get_font()
 	for unit in _logic.get_units():
 		if not unit is Unit or unit.is_dead():
 			continue
@@ -365,8 +365,8 @@ func _draw_units() -> void:
 		# 单位名称（首字）
 		if font and unit.unit_name.length() > 0:
 			var short_name: String = unit.unit_name.substr(0, 2)
-			draw_string(font, Vector2(screen_pos.x - 12, screen_pos.y + 5), short_name,
-				HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Renderer.COLOR_WHITE)
+			draw_string(font, Vector2(screen_pos.x - 16, screen_pos.y + 7), short_name,
+				HORIZONTAL_ALIGNMENT_CENTER, -1, 18, Renderer.COLOR_WHITE)
 
 		# E4.02 单位血条（头顶）
 		var hp_ratio: float = float(unit.hp) / float(unit.max_hp) if unit.max_hp > 0 else 0.0
@@ -377,8 +377,8 @@ func _draw_units() -> void:
 		# 攻击力/HP数值（小字）
 		if font:
 			var stat_text: String = "%d/%d" % [unit.atk, unit.hp]
-			draw_string(font, Vector2(screen_pos.x - 18, screen_pos.y + radius + 12), stat_text,
-				HORIZONTAL_ALIGNMENT_CENTER, -1, 11, Renderer.COLOR_GRAY)
+			draw_string(font, Vector2(screen_pos.x - 22, screen_pos.y + radius + 14), stat_text,
+				HORIZONTAL_ALIGNMENT_CENTER, -1, 15, Renderer.COLOR_GRAY)
 
 
 ## ============================================================
@@ -386,7 +386,7 @@ func _draw_units() -> void:
 ## ============================================================
 
 func _draw_formations() -> void:
-	var font = ThemeDB.fallback_font
+	var font = Renderer.get_font()
 	for f in _logic.get_formations():
 		if not f is Formation or f.is_dead():
 			continue
@@ -415,8 +415,8 @@ func _draw_formations() -> void:
 		# 阵法名称（首字）
 		if font and f.formation_name.length() > 0:
 			var short_name: String = f.formation_name.substr(0, 2)
-			draw_string(font, Vector2(screen_pos.x - 12, screen_pos.y + 5), short_name,
-				HORIZONTAL_ALIGNMENT_CENTER, -1, 13, Renderer.COLOR_WHITE)
+			draw_string(font, Vector2(screen_pos.x - 16, screen_pos.y + 7), short_name,
+				HORIZONTAL_ALIGNMENT_CENTER, -1, 17, Renderer.COLOR_WHITE)
 
 		# 阵法血条
 		var hp_ratio: float = f.get_hp_ratio()
@@ -434,7 +434,7 @@ func _draw_formations() -> void:
 ## ============================================================
 
 func _draw_top_hud() -> void:
-	var font = ThemeDB.fallback_font
+	var font = Renderer.get_font()
 	var players: Array = _logic.model.get("players", [])
 
 	# HUD背景条
@@ -448,13 +448,13 @@ func _draw_top_hud() -> void:
 		_draw_bar(Vector2(20, 25), 280, 20, p0.get_hall_hp_ratio(),
 			Renderer.COLOR_RED, Renderer.COLOR_GREEN)
 		if font:
-			draw_string(font, Vector2(20, 18), "攻方(你)",
-				HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Renderer.COLOR_BLUE)
-			draw_string(font, Vector2(20, 60), "HP: %d/%d" % [p0.hall_hp, Const.HALL_HP],
-				HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Renderer.COLOR_WHITE)
+			draw_string(font, Vector2(20, 22), "攻方(你)",
+				HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Renderer.COLOR_BLUE)
+			draw_string(font, Vector2(20, 58), "HP: %d/%d" % [p0.hall_hp, Const.HALL_HP],
+				HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Renderer.COLOR_WHITE)
 			# 灵力数值
-			draw_string(font, Vector2(200, 60), "灵力: %d/%d" % [p0.energy, p0.energy_max],
-				HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Renderer.COLOR_BLUE)
+			draw_string(font, Vector2(200, 58), "灵力: %d/%d" % [p0.energy, p0.energy_max],
+				HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Renderer.COLOR_BLUE)
 
 	# 右侧：守方(对手)信息
 	if players.size() > 1 and players[1] is Player:
@@ -462,10 +462,10 @@ func _draw_top_hud() -> void:
 		_draw_bar(Vector2(420, 25), 280, 20, p1.get_hall_hp_ratio(),
 			Renderer.COLOR_RED, Renderer.COLOR_GREEN)
 		if font:
-			draw_string(font, Vector2(700, 18), "守方(敌)",
-				HORIZONTAL_ALIGNMENT_RIGHT, -1, 14, Renderer.COLOR_RED)
-			draw_string(font, Vector2(700, 60), "HP: %d/%d" % [p1.hall_hp, Const.HALL_HP],
-				HORIZONTAL_ALIGNMENT_RIGHT, -1, 12, Renderer.COLOR_WHITE)
+			draw_string(font, Vector2(700, 22), "守方(敌)",
+				HORIZONTAL_ALIGNMENT_RIGHT, -1, 22, Renderer.COLOR_RED)
+			draw_string(font, Vector2(700, 58), "HP: %d/%d" % [p1.hall_hp, Const.HALL_HP],
+				HORIZONTAL_ALIGNMENT_RIGHT, -1, 18, Renderer.COLOR_WHITE)
 
 	# E8.02 中央计时器
 	var time_left: float = _logic.get_time()
@@ -487,7 +487,7 @@ func _draw_top_hud() -> void:
 ## ============================================================
 
 func _draw_energy() -> void:
-	var font = ThemeDB.fallback_font
+	var font = Renderer.get_font()
 	var players: Array = _logic.model.get("players", [])
 	if players.size() <= PLAYER_ID or not players[PLAYER_ID] is Player:
 		return
@@ -505,8 +505,8 @@ func _draw_energy() -> void:
 	# 灵力数值
 	if font:
 		var text: String = "灵力 %d / %d" % [player.energy, player.energy_max]
-		draw_string(font, Vector2(360, ENERGY_Y - 4), text,
-			HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Renderer.COLOR_WHITE)
+		draw_string(font, Vector2(360, ENERGY_Y - 6), text,
+			HORIZONTAL_ALIGNMENT_CENTER, -1, 18, Renderer.COLOR_WHITE)
 
 	# 灵力槽刻度（每个槽位标记）
 	for i in range(player.energy_max):
@@ -520,7 +520,7 @@ func _draw_energy() -> void:
 ## ============================================================
 
 func _draw_hand() -> void:
-	var font = ThemeDB.fallback_font
+	var font = Renderer.get_font()
 	var hand: Array[String] = _logic.get_hand(PLAYER_ID)
 
 	# 手牌栏背景
@@ -570,8 +570,8 @@ func _draw_hand() -> void:
 		# 卡牌内容
 		if font:
 			# 名称
-			draw_string(font, Vector2(card_x + 8, card_y + 24),
-				card.get("name", ""), HORIZONTAL_ALIGNMENT_LEFT, -1, 16,
+			draw_string(font, Vector2(card_x + 8, card_y + 28),
+				card.get("name", ""), HORIZONTAL_ALIGNMENT_LEFT, -1, 20,
 				Renderer.COLOR_WHITE)
 			# 类型
 			var type_text: String = ""
@@ -580,37 +580,37 @@ func _draw_hand() -> void:
 				"elite": type_text = "精英"
 				"formation": type_text = "阵法"
 				"spell": type_text = "法术"
-			draw_string(font, Vector2(card_x + 8, card_y + 46),
-				type_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Renderer.COLOR_GRAY)
+			draw_string(font, Vector2(card_x + 8, card_y + 54),
+				type_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Renderer.COLOR_GRAY)
 			# 特性
-			draw_string(font, Vector2(card_x + 8, card_y + 68),
-				card.get("trait", ""), HORIZONTAL_ALIGNMENT_LEFT, -1, 11,
+			draw_string(font, Vector2(card_x + 8, card_y + 80),
+				card.get("trait", ""), HORIZONTAL_ALIGNMENT_LEFT, -1, 14,
 				Color(0.7, 0.7, 0.7))
 			# 属性（HP/ATK）
 			var hp_val: int = int(card.get("hp", 0))
 			var atk_val: int = int(card.get("atk", 0))
 			if hp_val > 0 or atk_val > 0:
-				draw_string(font, Vector2(card_x + 8, card_y + 95),
+				draw_string(font, Vector2(card_x + 8, card_y + 108),
 					"HP:%d  ATK:%d" % [hp_val, atk_val],
-					HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Renderer.COLOR_WHITE)
+					HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Renderer.COLOR_WHITE)
 			# 费用（左下角，大字）
 			var cost_color: Color = Renderer.COLOR_BLUE if playable else Renderer.COLOR_RED
 			draw_string(font, Vector2(card_x + 8, card_y + HAND_CARD_H - 12),
 				"灵力 %d" % int(card.get("cost", 0)),
-				HORIZONTAL_ALIGNMENT_LEFT, -1, 16, cost_color)
+				HORIZONTAL_ALIGNMENT_LEFT, -1, 20, cost_color)
 
 	# 手牌栏提示文字
 	if hand.is_empty() and font:
 		draw_string(font, Vector2(360, HAND_Y + 100), "无手牌（等待补牌...）",
-			HORIZONTAL_ALIGNMENT_CENTER, -1, 16, Renderer.COLOR_GRAY)
+			HORIZONTAL_ALIGNMENT_CENTER, -1, 20, Renderer.COLOR_GRAY)
 
 	# 操作提示
 	if font:
 		var hint: String = "点击手牌选中 → 点击棋盘出牌"
 		if _selected_hand_idx >= 0:
 			hint = "已选中手牌，点击棋盘放置（法术直接点任意位置施放）"
-		draw_string(font, Vector2(360, HAND_Y + HAND_H - 8), hint,
-			HORIZONTAL_ALIGNMENT_CENTER, -1, 12, Renderer.COLOR_GOLD)
+		draw_string(font, Vector2(360, HAND_Y + HAND_H - 10), hint,
+			HORIZONTAL_ALIGNMENT_CENTER, -1, 16, Renderer.COLOR_GOLD)
 
 
 ## 判断玩家手牌是否负担得起
@@ -745,7 +745,7 @@ func _on_battle_ended(winner: int) -> void:
 ## 绘制结束遮罩
 ## E10.01 胜负展示 / E10.02 摧毁度 / E10.03 再来一局
 func _draw_end_overlay() -> void:
-	var font = ThemeDB.fallback_font
+	var font = Renderer.get_font()
 	# 半透明遮罩
 	draw_rect(Rect2(0, 0, 720, 1280), Color(0, 0, 0, 0.75), true)
 

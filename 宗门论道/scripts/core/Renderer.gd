@@ -22,11 +22,14 @@ const COLOR_GRAY: Color = Color(0.5, 0.5, 0.5, 1)           # 灰色（调试）
 const COLOR_DARK: Color = Color(0.15, 0.12, 0.18, 1)        # 暗色（面板背景）
 const COLOR_PANEL: Color = Color(0.2, 0.16, 0.26, 0.9)      # 半透明面板
 
-## 默认字体
+## 默认字体（矢量字体，避免位图字体放大后模糊）
 var _font: Font = null
 
 ## 是否显示调试信息
 var show_debug: bool = true
+
+## 字体资源路径（Noto Sans SC，SIL开源协议）
+const FONT_PATH: String = "res://assets/fonts/NotoSansSC-Regular.otf"
 
 
 ## ============================================================
@@ -34,8 +37,25 @@ var show_debug: bool = true
 ## ============================================================
 
 func _ready() -> void:
-	_font = ThemeDB.fallback_font
+	# 优先加载项目内置的矢量字体（解决fallback_font位图字体放大模糊问题）
+	var loaded_font = load(FONT_PATH)
+	if loaded_font is FontFile:
+		# 启用抗锯齿和hinting提升小字号清晰度
+		loaded_font.antialiasing = TextServer.FONT_ANTIALIASING_MSAA
+		loaded_font.hinting = TextServer.HINTING_LIGHT
+		loaded_font.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_ONE_HALF
+		_font = loaded_font
+		print("[Renderer] 已加载矢量字体: ", FONT_PATH)
+	else:
+		_font = ThemeDB.fallback_font
+		push_warning("[Renderer] 矢量字体加载失败，回退到fallback_font")
 	z_index = 100  # 渲染在最上层
+
+
+## 获取全局字体（供其他场景的_draw调用）
+## [return] 当前使用的Font实例
+func get_font() -> Font:
+	return _font
 
 
 ## ============================================================

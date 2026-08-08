@@ -31,6 +31,11 @@ window/size/viewport_height=1280
 window/stretch/mode="canvas_items"
 window/stretch/aspect="keep"
 
+; ===== GUI默认字体（矢量字体，避免位图字体放大模糊）=====
+[gui]
+
+theme/custom_font="res://assets/fonts/NotoSansSC-Regular.otf"
+
 ; ===== 渲染配置（使用兼容渲染器，确保跨平台+微信小游戏兼容）=====
 [rendering]
 

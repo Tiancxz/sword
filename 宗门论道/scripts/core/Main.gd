@@ -48,16 +48,16 @@ func _input(event: InputEvent) -> void:
 ## ============================================================
 
 func _draw() -> void:
-	var font = ThemeDB.fallback_font
+	var font = Renderer.get_font()
 	if font:
 		# 调试信息
 		draw_string(font, Vector2(10, 20), "FPS: %.0f" % Engine.get_frames_per_second(),
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.5, 0.5, 0.5, 0.8))
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.5, 0.5, 0.5, 0.8))
 
 		# 闪烁的"点击开始"提示（每秒闪一次）
 		var blink: float = sin(_elapsed * 3.0) * 0.5 + 0.5
 		var hint_alpha: float = 0.4 + blink * 0.6
 		draw_string(font, Vector2(360, 1150), "点击屏幕开始",
-			HORIZONTAL_ALIGNMENT_CENTER, -1, 24,
+			HORIZONTAL_ALIGNMENT_CENTER, -1, 32,
 			Color(0.9, 0.8, 0.5, hint_alpha))
 
