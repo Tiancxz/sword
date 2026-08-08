@@ -19,7 +19,7 @@ extends RefCounted
 var card_id: String = ""           ## 卡牌ID
 var formation_name: String = ""    ## 显示名称
 var owner: int = 0                 ## 0=攻方, 1=守方
-var trait: String = ""             ## 特性（基础拦截/命中减速/反伤等）
+var formation_trait: String = ""       ## 特性（基础拦截/命中减速/反伤等）
 
 # ===== 位置 =====
 var grid_x: int = 0                ## 所在列
@@ -64,7 +64,7 @@ func init_from_card(p_card_id: String, p_owner: int, p_grid_x: int, p_position_y
 	max_hp = hp
 	atk = int(card.get("atk", 0))
 	attack_range = int(card.get("range", 1))
-	trait = card.get("trait", "")
+	formation_trait = card.get("trait", "")
 
 	is_active = true
 	silence_timer = 0.0
@@ -117,7 +117,7 @@ func attack_target(target: Unit, model: Dictionary) -> void:
 	target.take_damage(atk, self)
 
 	# 特性效果：寒霜阵-命中减速
-	if trait.find("减速") >= 0:
+	if formation_trait.find("减速") >= 0:
 		target.add_buff("slow", Const.SLOW_AMOUNT, 1.0)
 
 
@@ -156,7 +156,7 @@ func take_damage(amount: int, attacker: Variant, model: Dictionary) -> int:
 	hp = max(0, hp - amount)
 
 	# 特性效果：反震阵-反伤50%
-	if trait.find("反伤") >= 0 and attacker is Unit:
+	if formation_trait.find("反伤") >= 0 and attacker is Unit:
 		var reflect: int = max(1, int(float(amount) * 0.5))
 		attacker.take_damage(reflect, self)
 
