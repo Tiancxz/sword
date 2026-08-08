@@ -55,11 +55,11 @@ const AI_ID: int = 1                    ## 对手=守方(id=1)
 # ===== 逻辑层 =====
 var _logic: BattleLogic = null           ## 战斗逻辑实例
 
+# ===== 正式AI（守方决策，D1.01-D1.05）=====
+var _ai: AIBrain = null                  ## AI决策实例
+
 # ===== 交互状态 =====
 var _selected_hand_idx: int = -1        ## 选中的手牌索引（-1=未选中）
-
-# ===== 简易守方AI（测试用，非正式D1.AI）=====
-var _ai_timer: float = 0.0              ## AI出牌计时器
 
 # ===== 大殿受击特效 =====
 ## {player_id: {timer, alpha}} 受击闪烁计时
@@ -86,15 +86,17 @@ func _ready() -> void:
 	# 玩家=攻方用均衡卡组，对手=守方用控制卡组
 	_logic.init_battle(DeckPresets.BALANCED, DeckPresets.CONTROL)
 
+	# 创建正式AI（守方），默认普通难度
+	_ai = AIBrain.new()
+	_ai.setup(_logic, AI_ID, AIBrain.Difficulty.NORMAL)
+	add_child(_ai)  ## 挂载为子节点，场景销毁时自动释放
+
 	# 连接事件总线信号（用于受击特效等）
 	EventBus.hall_damaged.connect(_on_hall_damaged)
 	EventBus.battle_ended.connect(_on_battle_ended)
 
 	# 广播战斗开始
 	EventBus.battle_started.emit()
-
-	# 初始化AI计时器
-	_ai_timer = Const.AI_THINK_INTERVAL
 
 
 ## ============================================================
@@ -105,8 +107,9 @@ func _process(delta: float) -> void:
 	# 1. 驱动战斗逻辑
 	_logic.on_update(delta)
 
-	# 2. 简易守方AI自动出牌（测试用）
-	_update_ai(delta)
+	# 2. 正式AI守方决策（D1.01-D1.05）
+	if _ai != null:
+		_ai.update(delta)
 
 	# 3. 更新受击特效计时
 	_update_hit_fx(delta)
@@ -733,42 +736,6 @@ func _handle_board_click(pos: Vector2) -> bool:
 
 
 ## ============================================================
-## 简易守方AI（测试用，非正式D1.AI）
-## ============================================================
-
-func _update_ai(delta: float) -> void:
-	if _logic.get_state() == "ended":
-		return
-
-	_ai_timer -= delta
-	if _ai_timer > 0.0:
-		return
-	_ai_timer = Const.AI_THINK_INTERVAL
-
-	# 守方自动选一张能负担的牌出
-	var hand: Array[String] = _logic.get_hand(AI_ID)
-	if hand.is_empty():
-		return
-
-	var player: Player = _logic.model["players"][AI_ID]
-
-	# 找第一张能负担的牌
-	for i in range(hand.size()):
-		var card: Dictionary = Cards.get_card(hand[i])
-		if card.is_empty():
-			continue
-		if player.energy < int(card.get("cost", 0)):
-			continue
-
-		# 随机选一列
-		var col: int = randi() % BOARD_COLS
-		var ok: bool = _logic.play_card(AI_ID, i, col, null)
-		if ok:
-			print("[BattleScene] AI在列%d出牌: %s" % [col, card.get("name", "")])
-			return
-
-
-## ============================================================
 ## 战斗结束处理
 ## ============================================================
 
@@ -872,11 +839,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 
-## 重新开始一局战斗（重置逻辑层状态）
+## 重新开始一局战斗（重置逻辑层与AI状态）
 func _restart_battle() -> void:
 	_logic.init_battle(DeckPresets.BALANCED, DeckPresets.CONTROL)
+	if _ai != null:
+		_ai.reset()
 	_selected_hand_idx = -1
-	_ai_timer = Const.AI_THINK_INTERVAL
 	_end_delay = 0.0
 	_hall_hit_fx.clear()
 	_last_hall_hp = [Const.HALL_HP, Const.HALL_HP]
