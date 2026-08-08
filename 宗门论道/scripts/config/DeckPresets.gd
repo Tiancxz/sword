@@ -20,16 +20,16 @@ static var RUSH: Array[String] = [
 	"zhen_hun",        # 3费 禁阵法
 ]
 
-## 控制卡组：法术+阵法为主，后期发力
+## 控制卡组：守方专用，阵法+守方单位为主，层层拦截
 static var CONTROL: Array[String] = [
-	"jin_zhong",       # 3费 护盾
-	"wu_lei",          # 4费 AOE
-	"kun_xian",        # 3费 眩晕
-	"tian_lei",        # 4费 AOE
-	"jin_zhong",       # 3费 护盾
-	"yi_shan",         # 5费 推后
-	"elder_jindan",    # 6费 精英
-	"wan_jian",        # 4费 全员增益
+	"jiemai_formation",    # 2费 截脉阵 基础拦截
+	"hanshuang_formation", # 3费 寒霜阵 命中减速
+	"jiemai_formation",    # 2费 截脉阵 基础拦截
+	"ying_jian",           # 3费 影剑 冲向最近敌
+	"wanren_formation",    # 4费 万刃阵 高输出拦截
+	"fanzhen_formation",   # 3费 反震阵 反伤50%
+	"guardian_beast",      # 3费 守门灵兽 高血量肉盾
+	"tianluo_formation",   # 5费 天罗阵 范围拦截
 ]
 
 ## 均衡卡组：单位+法术搭配，攻守兼备

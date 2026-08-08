@@ -139,8 +139,10 @@ static func branch_beast(elder: Unit, model: Dictionary) -> void:
 	var beast: Unit = Unit.new()
 	# 在长老当前位置召唤守门灵兽
 	beast.init_from_card("guardian_beast", elder.owner, elder.grid_x, int(elder.position_y))
+	# init_from_card按owner重置了position_y到出生点，这里覆盖回长老当前位置
+	beast.position_y = elder.position_y
 	model["units"].append(beast)
-	print("  └ 御兽：召唤守门灵兽于列%d" % elder.grid_x)
+	print("  └ 御兽：召唤守门灵兽于列%d y=%.1f" % [elder.grid_x, elder.position_y])
 
 
 ## ============================================================

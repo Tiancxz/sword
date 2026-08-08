@@ -106,13 +106,14 @@ static func check_collision(unit: Unit, target: Variant) -> bool:
 ## ============================================================
 
 ## 检查单位是否到达敌方大殿
-## 攻方到顶（y>=BOARD_LENGTH-1），守方到底（y<=0）
+## 攻方facing=+1向下，到达底部守方大殿(y>=BOARD_LENGTH-1)
+## 守方facing=-1向上，到达顶部攻方大殿(y<=0)
 static func check_hall_reach(unit: Unit) -> bool:
 	if unit.owner == 0:
-		# 攻方向上移动，到达顶部大殿
+		# 攻方向下移动，到达底部守方大殿
 		return unit.position_y >= float(Const.BOARD_LENGTH - 1)
 	else:
-		# 守方向下移动，到达底部大殿
+		# 守方向上移动，到达顶部攻方大殿
 		return unit.position_y <= 0.0
 
 

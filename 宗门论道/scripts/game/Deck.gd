@@ -79,7 +79,7 @@ func can_play(idx: int, energy: int) -> bool:
 	var card: Dictionary = Cards.get_card(hand[idx])
 	if card.is_empty():
 		return false
-	return energy >= card["cost"]
+	return energy >= int(card.get("cost", 0))
 
 
 ## 打出牌：从手牌移除，设置补牌计时器，返回cardId

@@ -211,7 +211,7 @@ func _draw_background() -> void:
 	# 底部山脉（攻方区域，暗蓝色调）
 	for i in range(5):
 		var alpha: float = 0.15 + float(i) * 0.05
-		var rect_y: float = BOARD_TOP + float(BOARD_COLS - 1 - i) * CELL_H
+		var rect_y: float = BOARD_TOP + float(Const.BOARD_LENGTH - 1 - i) * CELL_H
 		draw_rect(Rect2(BOARD_LEFT, rect_y, float(BOARD_COLS) * CELL_W, CELL_H),
 			Color(0.1, 0.15, 0.3, alpha), true)
 
