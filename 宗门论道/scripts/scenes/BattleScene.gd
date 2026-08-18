@@ -77,6 +77,8 @@ var _last_hall_hp: Array = [Const.HALL_HP, Const.HALL_HP]
 ## ============================================================
 
 func _ready() -> void:
+	# 像素素材用最近邻采样，缩放时不模糊
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	print("[BattleScene] 战斗场景就绪")
 
 	# 创建逻辑层实例
@@ -196,6 +198,36 @@ func _screen_to_col(screen_x: float) -> int:
 
 
 ## ============================================================
+## 贴图加载（像素风素材，带缓存+缺图回退）
+## ============================================================
+
+## 贴图缓存 { 资源路径: Texture2D/null }
+var _tex_cache: Dictionary = {}
+
+## 加载素材贴图（缓存，未导入/缺失时返回null）
+func _get_art(path: String) -> Texture2D:
+	if _tex_cache.has(path):
+		return _tex_cache[path]
+	var tex: Texture2D = null
+	if ResourceLoader.exists(path):
+		tex = load(path) as Texture2D
+	_tex_cache[path] = tex
+	return tex
+
+## 获取单位贴图（按卡牌ID映射: unit_<card_id>.jpg）
+func _get_unit_tex(card_id: String) -> Texture2D:
+	if card_id.is_empty():
+		return null
+	return _get_art("res://assets/art/unit_%s.jpg" % card_id)
+
+## 获取大殿贴图（0=攻方 1=守方）
+func _get_hall_tex(player_id: int) -> Texture2D:
+	var path: String = "res://assets/art/hall_attacker.jpg" if player_id == 0 \
+		else "res://assets/art/hall_defender.jpg"
+	return _get_art(path)
+
+
+## ============================================================
 ## E2.01 - 山道背景
 ## ============================================================
 
@@ -268,30 +300,42 @@ func _draw_halls() -> void:
 		if _hall_hit_fx.has(player.id):
 			hit_alpha = float(_hall_hit_fx[player.id].get("alpha", 0.0))
 
-		# 大殿主体（梯形/矩形模拟建筑）
-		var hall_w: float = float(BOARD_COLS - 1) * CELL_W + CELL_W
-		var hall_rect: Rect2 = Rect2(screen_pos.x - hall_w * 0.5, screen_pos.y - CELL_H * 0.4, hall_w, CELL_H * 0.8)
+		# E3.01 大殿贴图（像素素材，等比居中显示）
+		var hall_size: float = CELL_H * 0.8
+		var hall_tex: Texture2D = _get_hall_tex(player.id)
+		var hall_rect: Rect2
 
-		# 主体颜色：攻方蓝色调，守方红色调
-		var base_color: Color = Color(0.3, 0.4, 0.7, 0.9) if player.id == 0 else Color(0.7, 0.3, 0.3, 0.9)
-		draw_rect(hall_rect, base_color, true)
-		draw_rect(hall_rect, Renderer.COLOR_GOLD, false, 2.0)
+		if hall_tex != null:
+			hall_rect = Rect2(screen_pos.x - hall_size * 0.5, screen_pos.y - hall_size * 0.5,
+				hall_size, hall_size)
+			draw_texture_rect(hall_tex, hall_rect, false)
+			draw_rect(hall_rect, Renderer.COLOR_GOLD, false, 2.0)
+		else:
+			# 素材未导入时回退为色块矩形
+			var hall_w: float = float(BOARD_COLS - 1) * CELL_W + CELL_W
+			hall_rect = Rect2(screen_pos.x - hall_w * 0.5, screen_pos.y - CELL_H * 0.4, hall_w, CELL_H * 0.8)
+			var base_color: Color = Color(0.3, 0.4, 0.7, 0.9) if player.id == 0 else Color(0.7, 0.3, 0.3, 0.9)
+			draw_rect(hall_rect, base_color, true)
+			draw_rect(hall_rect, Renderer.COLOR_GOLD, false, 2.0)
 
-		# 受击闪烁
+		# 受击闪烁（覆盖在贴图上）
 		if hit_alpha > 0.0:
 			draw_rect(hall_rect, Color(1, 0.2, 0.2, hit_alpha), true)
 
-		# 大殿名称
+		# 大殿名称（贴图内下方，黑描边保证可读）
 		var label: String = "攻方大殿" if player.id == 0 else "守方大殿"
 		if player.id == PLAYER_ID:
 			label += "(你)"
 		if font:
-			draw_string(font, Vector2(screen_pos.x - 50, screen_pos.y - 8), label,
-				HORIZONTAL_ALIGNMENT_CENTER, -1, 24, Renderer.COLOR_GOLD)
+			var name_y: float = hall_rect.position.y + hall_rect.size.y - 6.0
+			draw_string_outline(font, Vector2(screen_pos.x, name_y), label,
+				HORIZONTAL_ALIGNMENT_CENTER, -1, 20, 4, Color(0, 0, 0, 0.85))
+			draw_string(font, Vector2(screen_pos.x, name_y), label,
+				HORIZONTAL_ALIGNMENT_CENTER, -1, 20, Renderer.COLOR_GOLD)
 
 		# E3.02 大殿血条（大殿下方）
 		var bar_y: float = hall_rect.position.y + hall_rect.size.y + 5
-		var bar_w: float = hall_w * 0.8
+		var bar_w: float = CELL_W * 0.8
 		var hp_ratio: float = player.get_hall_hp_ratio()
 		_draw_bar(Vector2(screen_pos.x - bar_w * 0.5, bar_y), bar_w, 16, hp_ratio,
 			Renderer.COLOR_RED, Renderer.COLOR_GREEN)
@@ -336,37 +380,42 @@ func _draw_units() -> void:
 
 		var screen_pos: Vector2 = _grid_to_screen(unit.grid_x, unit.position_y)
 
-		# 单位主体颜色：攻方蓝，守方红，精英金色
-		var body_color: Color = Renderer.COLOR_BLUE
-		if unit.owner == 1:
-			body_color = Renderer.COLOR_RED
-		if unit.unit_type == "elite":
-			body_color = Renderer.COLOR_GOLD
-
-		# 眩晕状态变暗
-		if unit.get_effective_speed() == 0.0 and unit.base_speed > 0.0:
-			body_color = body_color.darkened(0.4)
-
-		# 单位形状：圆形（近战）/菱形（远程）/星形（精英）
+		# 贴图尺寸：普通52，精英64（radius用于光环/血条/方向线定位）
 		var radius: float = 22.0
+		var sprite_size: float = 52.0
 		if unit.unit_type == "elite":
 			radius = 28.0
-			# 精英用大圆+金色光环
+			sprite_size = 64.0
+			# 精英金色光环
 			draw_circle(screen_pos, radius + 4, Color(0.9, 0.8, 0.5, 0.3))
 
-		draw_circle(screen_pos, radius, body_color)
-		draw_arc(screen_pos, radius, 0, TAU, 32, Renderer.COLOR_WHITE, 1.5)
+		# 眩晕判定（贴图变暗 / 回退色块变暗）
+		var stunned: bool = unit.get_effective_speed() == 0.0 and unit.base_speed > 0.0
+
+		# E4.01 单位贴图（像素素材，按卡牌ID映射）
+		var unit_tex: Texture2D = _get_unit_tex(unit.card_id)
+		if unit_tex != null:
+			var sprite_rect: Rect2 = Rect2(screen_pos.x - sprite_size * 0.5,
+				screen_pos.y - sprite_size * 0.5, sprite_size, sprite_size)
+			var modulate: Color = Color(0.55, 0.55, 0.55) if stunned else Color.WHITE
+			draw_texture_rect(unit_tex, sprite_rect, false, modulate)
+			draw_rect(sprite_rect, Renderer.COLOR_WHITE, false, 1.0)
+		else:
+			# 素材未导入时回退为色块圆形
+			var body_color: Color = Renderer.COLOR_BLUE
+			if unit.owner == 1:
+				body_color = Renderer.COLOR_RED
+			if unit.unit_type == "elite":
+				body_color = Renderer.COLOR_GOLD
+			if stunned:
+				body_color = body_color.darkened(0.4)
+			draw_circle(screen_pos, radius, body_color)
+			draw_arc(screen_pos, radius, 0, TAU, 32, Renderer.COLOR_WHITE, 1.5)
 
 		# 远程单位画一个小三角标识方向
 		if unit.attack_range > 0:
 			var dir: Vector2 = Vector2(0, float(unit.facing)) * (radius + 8)
 			draw_line(screen_pos, screen_pos + dir, Renderer.COLOR_WHITE, 2.0)
-
-		# 单位名称（首字）
-		if font and unit.unit_name.length() > 0:
-			var short_name: String = unit.unit_name.substr(0, 2)
-			draw_string(font, Vector2(screen_pos.x - 16, screen_pos.y + 7), short_name,
-				HORIZONTAL_ALIGNMENT_CENTER, -1, 18, Renderer.COLOR_WHITE)
 
 		# E4.02 单位血条（头顶）
 		var hp_ratio: float = float(unit.hp) / float(unit.max_hp) if unit.max_hp > 0 else 0.0
@@ -374,11 +423,16 @@ func _draw_units() -> void:
 		_draw_bar(Vector2(screen_pos.x - bar_w * 0.5, screen_pos.y - radius - 12),
 			bar_w, 5, hp_ratio, Renderer.COLOR_RED, Renderer.COLOR_GREEN)
 
-		# 攻击力/HP数值（小字）
+		# 名称+属性 一行显示（贴图下方，黑描边保证可读）
 		if font:
-			var stat_text: String = "%d/%d" % [unit.atk, unit.hp]
-			draw_string(font, Vector2(screen_pos.x - 22, screen_pos.y + radius + 14), stat_text,
-				HORIZONTAL_ALIGNMENT_CENTER, -1, 15, Renderer.COLOR_GRAY)
+			var info_text: String = ""
+			if unit.unit_name.length() > 0:
+				info_text = unit.unit_name.substr(0, 2) + " "
+			info_text += "%d/%d" % [unit.atk, unit.hp]
+			draw_string_outline(font, Vector2(screen_pos.x, screen_pos.y + radius + 18), info_text,
+				HORIZONTAL_ALIGNMENT_CENTER, -1, 15, 4, Color(0, 0, 0, 0.85))
+			draw_string(font, Vector2(screen_pos.x, screen_pos.y + radius + 18), info_text,
+				HORIZONTAL_ALIGNMENT_CENTER, -1, 15, Renderer.COLOR_WHITE)
 
 
 ## ============================================================
