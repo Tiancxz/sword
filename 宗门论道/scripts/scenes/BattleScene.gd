@@ -71,6 +71,9 @@ var _end_delay: float = 0.0
 # ===== 大殿血量追踪（轮询触发受击特效，不依赖事件总线）=====
 var _last_hall_hp: Array = [Const.HALL_HP, Const.HALL_HP]
 
+# ===== 动画计时（走路浮动/攻击突刺的相位）=====
+var _anim_time: float = 0.0
+
 
 ## ============================================================
 ## E1.01 - 场景进入
@@ -106,6 +109,9 @@ func _ready() -> void:
 ## ============================================================
 
 func _process(delta: float) -> void:
+	# 0. 动画计时（走路浮动/攻击突刺）
+	_anim_time += delta
+
 	# 1. 驱动战斗逻辑
 	_logic.on_update(delta)
 
@@ -214,16 +220,16 @@ func _get_art(path: String) -> Texture2D:
 	_tex_cache[path] = tex
 	return tex
 
-## 获取单位贴图（按卡牌ID映射: unit_<card_id>.jpg）
+## 获取单位贴图（按卡牌ID映射: unit_<card_id>.png）
 func _get_unit_tex(card_id: String) -> Texture2D:
 	if card_id.is_empty():
 		return null
-	return _get_art("res://assets/art/unit_%s.jpg" % card_id)
+	return _get_art("res://assets/art/unit_%s.png" % card_id)
 
 ## 获取大殿贴图（0=攻方 1=守方）
 func _get_hall_tex(player_id: int) -> Texture2D:
-	var path: String = "res://assets/art/hall_attacker.jpg" if player_id == 0 \
-		else "res://assets/art/hall_defender.jpg"
+	var path: String = "res://assets/art/hall_attacker.png" if player_id == 0 \
+		else "res://assets/art/hall_defender.png"
 	return _get_art(path)
 
 
@@ -300,16 +306,14 @@ func _draw_halls() -> void:
 		if _hall_hit_fx.has(player.id):
 			hit_alpha = float(_hall_hit_fx[player.id].get("alpha", 0.0))
 
-		# E3.01 大殿贴图（像素素材，等比居中显示）
-		var hall_size: float = CELL_H * 0.8
+		# E3.01 大殿贴图（像素素材按2x整数缩放，居中）
 		var hall_tex: Texture2D = _get_hall_tex(player.id)
 		var hall_rect: Rect2
 
 		if hall_tex != null:
-			hall_rect = Rect2(screen_pos.x - hall_size * 0.5, screen_pos.y - hall_size * 0.5,
-				hall_size, hall_size)
+			var hs: Vector2 = hall_tex.get_size() * 2.0
+			hall_rect = Rect2(screen_pos.x - hs.x * 0.5, screen_pos.y - hs.y * 0.5, hs.x, hs.y)
 			draw_texture_rect(hall_tex, hall_rect, false)
-			draw_rect(hall_rect, Renderer.COLOR_GOLD, false, 2.0)
 		else:
 			# 素材未导入时回退为色块矩形
 			var hall_w: float = float(BOARD_COLS - 1) * CELL_W + CELL_W
@@ -380,26 +384,35 @@ func _draw_units() -> void:
 
 		var screen_pos: Vector2 = _grid_to_screen(unit.grid_x, unit.position_y)
 
-		# 贴图尺寸：普通52，精英64（radius用于光环/血条/方向线定位）
+		# 精英光环 / radius用于血条与方向线定位
 		var radius: float = 22.0
-		var sprite_size: float = 52.0
 		if unit.unit_type == "elite":
 			radius = 28.0
-			sprite_size = 64.0
-			# 精英金色光环
 			draw_circle(screen_pos, radius + 4, Color(0.9, 0.8, 0.5, 0.3))
 
 		# 眩晕判定（贴图变暗 / 回退色块变暗）
 		var stunned: bool = unit.get_effective_speed() == 0.0 and unit.base_speed > 0.0
 
-		# E4.01 单位贴图（像素素材，按卡牌ID映射）
+		# ===== 动画偏移（仅贴图本体，血条/文字保持稳定）=====
+		# 走路: 上下浮动（相位按行错开避免整齐划一）
+		# 攻击: 朝目标方向突刺（屏幕Y与逻辑facing相反）
+		var anim_offset: Vector2 = Vector2.ZERO
+		var phase: float = _anim_time * 8.0 + screen_pos.y * 0.13
+		if unit.state == "walking":
+			anim_offset.y = sin(phase) * 2.5
+		elif unit.state == "fighting":
+			var lunge: float = absf(sin(_anim_time * 10.0 + screen_pos.y * 0.13)) * 5.0
+			anim_offset.y = -float(unit.facing) * lunge
+
+		# E4.01 单位贴图（像素素材按2x整数缩放，按卡牌ID映射）
 		var unit_tex: Texture2D = _get_unit_tex(unit.card_id)
 		if unit_tex != null:
-			var sprite_rect: Rect2 = Rect2(screen_pos.x - sprite_size * 0.5,
-				screen_pos.y - sprite_size * 0.5, sprite_size, sprite_size)
+			var ts: Vector2 = unit_tex.get_size() * 2.0
+			var sprite_pos: Vector2 = screen_pos + anim_offset
+			var sprite_rect: Rect2 = Rect2(sprite_pos.x - ts.x * 0.5,
+				sprite_pos.y - ts.y * 0.5, ts.x, ts.y)
 			var modulate: Color = Color(0.55, 0.55, 0.55) if stunned else Color.WHITE
 			draw_texture_rect(unit_tex, sprite_rect, false, modulate)
-			draw_rect(sprite_rect, Renderer.COLOR_WHITE, false, 1.0)
 		else:
 			# 素材未导入时回退为色块圆形
 			var body_color: Color = Renderer.COLOR_BLUE
@@ -409,8 +422,9 @@ func _draw_units() -> void:
 				body_color = Renderer.COLOR_GOLD
 			if stunned:
 				body_color = body_color.darkened(0.4)
-			draw_circle(screen_pos, radius, body_color)
-			draw_arc(screen_pos, radius, 0, TAU, 32, Renderer.COLOR_WHITE, 1.5)
+			var draw_pos: Vector2 = screen_pos + anim_offset
+			draw_circle(draw_pos, radius, body_color)
+			draw_arc(draw_pos, radius, 0, TAU, 32, Renderer.COLOR_WHITE, 1.5)
 
 		# 远程单位画一个小三角标识方向
 		if unit.attack_range > 0:
