@@ -220,11 +220,22 @@ func _get_art(path: String) -> Texture2D:
 	_tex_cache[path] = tex
 	return tex
 
-## 获取单位贴图（按卡牌ID映射: unit_<card_id>.png）
-func _get_unit_tex(card_id: String) -> Texture2D:
+## 帧动画缓存 { card_id: Array[Texture2D] }
+var _frame_cache: Dictionary = {}
+
+## 获取单位动画帧序列（f0基础/f1抬左脚/f2抬右脚，按卡牌ID映射）
+func _get_unit_frames(card_id: String) -> Array:
 	if card_id.is_empty():
-		return null
-	return _get_art("res://assets/art/unit_%s.png" % card_id)
+		return []
+	if _frame_cache.has(card_id):
+		return _frame_cache[card_id]
+	var frames: Array = []
+	for suffix in ["_f0", "_f1", "_f2"]:
+		var t: Texture2D = _get_art("res://assets/art/unit_%s%s.png" % [card_id, suffix])
+		if t != null:
+			frames.append(t)
+	_frame_cache[card_id] = frames
+	return frames
 
 ## 获取大殿贴图（0=攻方 1=守方）
 func _get_hall_tex(player_id: int) -> Texture2D:
@@ -404,8 +415,16 @@ func _draw_units() -> void:
 			var lunge: float = absf(sin(_anim_time * 10.0 + screen_pos.y * 0.13)) * 5.0
 			anim_offset.y = -float(unit.facing) * lunge
 
-		# E4.01 单位贴图（像素素材按2x整数缩放，按卡牌ID映射）
-		var unit_tex: Texture2D = _get_unit_tex(unit.card_id)
+		# E4.01 单位贴图（帧动画: 走路3帧循环 f0→f1→f0→f2，战斗用基础帧）
+		var unit_tex: Texture2D = null
+		var frames: Array = _get_unit_frames(unit.card_id)
+		if not frames.is_empty():
+			if unit.state == "walking" and frames.size() >= 3:
+				var cycle: Array = [0, 1, 0, 2]
+				var fi: int = int(_anim_time * 7.0 + screen_pos.y * 0.13) % 4
+				unit_tex = frames[cycle[fi]]
+			else:
+				unit_tex = frames[0]
 		if unit_tex != null:
 			var ts: Vector2 = unit_tex.get_size() * 2.0
 			var sprite_pos: Vector2 = screen_pos + anim_offset
@@ -425,6 +444,17 @@ func _draw_units() -> void:
 			var draw_pos: Vector2 = screen_pos + anim_offset
 			draw_circle(draw_pos, radius, body_color)
 			draw_arc(draw_pos, radius, 0, TAU, 32, Renderer.COLOR_WHITE, 1.5)
+
+		# 攻击斩击特效（白色弧光+斜线，与突刺节奏同步，只在峰值闪现）
+		if unit.state == "fighting":
+			var ap: float = absf(sin(_anim_time * 10.0 + screen_pos.y * 0.13))
+			if ap > 0.6:
+				var fx_a: float = (ap - 0.6) * 2.5
+				var dir_y: float = -float(unit.facing)
+				var fx_c: Vector2 = screen_pos + Vector2(0.0, dir_y * (radius + 12.0))
+				draw_arc(fx_c, 8.0, 0.0, TAU, 16, Color(1.0, 1.0, 0.85, fx_a), 2.0)
+				draw_line(fx_c + Vector2(-5.0, -4.0 * dir_y), fx_c + Vector2(5.0, 4.0 * dir_y),
+					Color(1.0, 1.0, 1.0, fx_a), 2.0)
 
 		# 远程单位画一个小三角标识方向
 		if unit.attack_range > 0:
@@ -467,6 +497,9 @@ func _draw_formations() -> void:
 		# 沉默状态变灰
 		if not f.is_active:
 			color = Color(0.4, 0.4, 0.4, 0.7)
+		else:
+			# 激活状态呼吸脉动（微光闪烁）
+			color.a = 0.7 + 0.3 * absf(sin(_anim_time * 3.0 + screen_pos.x * 0.05))
 
 		# 画菱形（4个顶点）
 		var pts: PackedVector2Array = [

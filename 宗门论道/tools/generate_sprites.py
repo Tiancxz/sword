@@ -60,6 +60,33 @@ def make_sprite(name: str, rows: list, scale: int = 2):
     img.save(path)
     print(f"  {name}.png  {img.size[0]}x{img.size[1]}")
 
+def derive_walk_frames(rows: list) -> list:
+    """从基础帧推导走路动画帧。
+    f0=双脚着地, f1=左脚抬起(上移1px), f2=右脚抬起。
+    脚色='F'。无脚（浮空单位）或只有一只脚时返回单帧。"""
+    import re
+    feet_y = -1
+    for y in range(len(rows) - 1, -1, -1):
+        if "F" in rows[y]:
+            feet_y = y
+            break
+    if feet_y < 0:
+        return [rows]
+    runs = [m.span() for m in re.finditer(r"F+", rows[feet_y])]
+    if len(runs) < 2:
+        return [rows]
+
+    def lift(run) -> list:
+        grid = [list(r) for r in rows]
+        for x in range(run[0], run[1]):
+            grid[feet_y][x] = "."
+            # 脚上移1px（上方是透明才移，否则删除=收腿）
+            if feet_y > 0 and grid[feet_y - 1][x] == ".":
+                grid[feet_y - 1][x] = "F"
+        return ["".join(r) for r in grid]
+
+    return [rows, lift(runs[0]), lift(runs[-1])]
+
 # ============================================================
 # 单位精灵（13~14宽，2x放大后渲染为52px）
 # ============================================================
@@ -234,18 +261,25 @@ HALL_DEF = [
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     print("生成像素精灵 ->", os.path.abspath(OUT_DIR))
-    # 单位（普通26px宽 / 精英32px宽，游戏内2x渲染）
-    make_sprite("unit_beast_disciple", BEAST)
-    make_sprite("unit_body_disciple", BODY)
-    make_sprite("unit_sword_disciple", SWORD)
-    make_sprite("unit_ying_jian", YING)
-    make_sprite("unit_huti_jianling", JIANLING)
-    make_sprite("unit_guardian_beast", GUARDIAN)
-    make_sprite("unit_elder_jindan", ELDER)
-    # 大殿
+    # 单位（走路帧 f0/f1/f2，普通26px宽 / 精英32px宽，游戏内2x渲染）
+    units = [
+        ("unit_beast_disciple", BEAST),
+        ("unit_body_disciple", BODY),
+        ("unit_sword_disciple", SWORD),
+        ("unit_ying_jian", YING),
+        ("unit_huti_jianling", JIANLING),
+        ("unit_guardian_beast", GUARDIAN),
+        ("unit_elder_jindan", ELDER),
+    ]
+    frame_count = 0
+    for name, art in units:
+        for i, frame in enumerate(derive_walk_frames(art)):
+            make_sprite("%s_f%d" % (name, i), frame)
+            frame_count += 1
+    # 大殿（单帧）
     make_sprite("hall_attacker", HALL_ATK)
     make_sprite("hall_defender", HALL_DEF)
-    print("完成: 9 张精灵图")
+    print("完成: %d 张单位动画帧 + 2 张大殿" % frame_count)
 
 if __name__ == "__main__":
     main()
