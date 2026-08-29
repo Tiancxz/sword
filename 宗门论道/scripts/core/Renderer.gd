@@ -41,7 +41,7 @@ func _ready() -> void:
 	var loaded_font = load(FONT_PATH)
 	if loaded_font is FontFile:
 		# 启用抗锯齿和hinting提升小字号清晰度
-		loaded_font.antialiasing = TextServer.FONT_ANTIALIASING_MSAA
+		loaded_font.antialiasing = TextServer.FONT_ANTIALIASING_GRAY
 		loaded_font.hinting = TextServer.HINTING_LIGHT
 		loaded_font.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_ONE_HALF
 		_font = loaded_font
